@@ -9,12 +9,7 @@
 #include <glm/gtx/transform.hpp>
 #include <iostream>
 
-//Camera Settings:
-constexpr float kCameraBaseSpeed = 1.7f; // units/second
-constexpr float kCameraFastMult = 5.f; // speed multiplier
-constexpr float kCameraSlowMult = 0.05f; // speed multiplier
-
-constexpr float kCameraMouseSensitivity = 0.01f; // radians per pixel
+#include "render_constants.hpp"
 
 enum class EInputState
 {
