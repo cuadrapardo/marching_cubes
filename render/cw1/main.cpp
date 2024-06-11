@@ -42,6 +42,7 @@ using namespace labutils::literals;
 #include "../labutils/renderpass.hpp"
 #include "../labutils/allocator.hpp"
 #include "../labutils/render_constants.hpp"
+#include "../labutils/descriptor.hpp"
 
 namespace lut = labutils;
 
@@ -94,11 +95,8 @@ namespace
     // Helpers:
     std::vector<TexturedMesh> create_textured_meshes(labutils::VulkanContext const &window, labutils::Allocator const &allocator, SimpleModel& obj);
 
-    lut::DescriptorSetLayout create_scene_descriptor_layout( lut::VulkanWindow const& );
-    lut::DescriptorSetLayout create_object_descriptor_layout( lut::VulkanWindow const& );
 
     std::tuple<lut::Image, lut::ImageView> create_depth_buffer(lut::VulkanWindow const&, lut::Allocator const&);
-
 
     void create_swapchain_framebuffers(
             lut::VulkanWindow const&,
@@ -716,49 +714,9 @@ namespace {
         assert(aWindow.swapViews.size() == aFramebuffers.size());
     }
 
-    lut::DescriptorSetLayout create_scene_descriptor_layout(lut::VulkanWindow const &aWindow) {
-        VkDescriptorSetLayoutBinding bindings[1]{};
-        bindings[0].binding = 0; //Number must match the index of the corresponding binding = N declaration in the
-        // Shaders!
-        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        bindings[0].descriptorCount = 1;
-        bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = sizeof(bindings) / sizeof(bindings[0]);
-        layoutInfo.pBindings = bindings;
 
-        VkDescriptorSetLayout layout = VK_NULL_HANDLE;
-        if (auto const res = vkCreateDescriptorSetLayout(aWindow.device, &layoutInfo, nullptr, &layout);
-                VK_SUCCESS != res) {
-            throw lut::Error("Unable to create descriptor set layoutt\n"
-                             "vkCreateDescriptorSetLAyout() returned %s", lut::to_string(res).c_str());
-        }
-        return lut::DescriptorSetLayout(aWindow.device, layout);
-    }
 
-    lut::DescriptorSetLayout create_object_descriptor_layout(lut::VulkanWindow const &aWindow) {
-        VkDescriptorSetLayoutBinding bindings[1]{};
-        bindings[0].binding = 0; // this must match the shaders
-        bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        bindings[0].descriptorCount = 1;
-        bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = sizeof(bindings) / sizeof(bindings[0]);
-        layoutInfo.pBindings = bindings;
-
-        VkDescriptorSetLayout layout = VK_NULL_HANDLE;
-        if (auto const res = vkCreateDescriptorSetLayout(aWindow.device, &layoutInfo, nullptr, &layout); VK_SUCCESS !=
-                                                                                                         res) {
-            throw lut::Error("Unable to create descriptor set layout\n"
-                             "vkCreateDescriptorSetLayout() returned %s", lut::to_string(res).c_str());
-        }
-        return lut::DescriptorSetLayout(aWindow.device, layout);
-
-    }
 
     std::tuple<lut::Image, lut::ImageView>
     create_depth_buffer(lut::VulkanWindow const &aWindow, lut::Allocator const &aAllocator) {
