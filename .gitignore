@@ -1,0 +1,6 @@
+.idea
+_build_
+bin
+lib
+assets
+Makefile
