@@ -14,12 +14,41 @@
 #include "error.hpp"
 #include "vkbuffer.hpp"
 
+using namespace labutils::literals;
+
 //Camera Settings:
 constexpr float kCameraBaseSpeed = 1.7f; // units/second
 constexpr float kCameraFastMult = 5.f; // speed multiplier
 constexpr float kCameraSlowMult = 0.05f; // speed multiplier
 
 constexpr float kCameraMouseSensitivity = 0.01f; // radians per pixel
+
+
+enum class EInputState
+{
+    forward,
+    backward,
+    strafeLeft,
+    strafeRight,
+    levitate,
+    sink,
+    fast,
+    slow,
+    mousing,
+    max
+};
+
+struct UserState
+{
+    bool inputMap[std::size_t(EInputState::max)] = {};
+
+    float mouseX = 0.f, mouseY = 0.f;
+    float previousX = 0.f, previousY = 0.f;
+
+    bool wasMousing = false;
+
+    glm::mat4 camera2world = glm::identity<glm::mat4>();
+};
 
 
 namespace cfg
@@ -40,6 +69,16 @@ namespace cfg
 
 
     constexpr VkFormat kDepthFormat = VK_FORMAT_D32_SFLOAT;
+
+    // General rule: with a standard 24 bit or 32 bit float depth buffer,
+    // you can support a 1:1000 ratio between the near and far plane with
+    // minimal depth fighting. Larger ratios will introduce more depth
+    // fighting problems; smaller ratios will increase the depth buffer's
+    // resolution but will also limit the view distance
+    constexpr float kCameraNear  = 0.1f;
+    constexpr float kCameraFar   = 100.f;
+
+    constexpr auto kCameraFov = 60.0_degf;
 
 }
 

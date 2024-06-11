@@ -51,26 +51,10 @@ namespace lut = labutils;
 #include "load_model_obj.hpp"
 
 
-namespace cfg {
-    // General rule: with a standard 24 bit or 32 bit float depth buffer,
-    // you can support a 1:1000 ratio between the near and far plane with
-    // minimal depth fighting. Larger ratios will introduce more depth
-    // fighting problems; smaller ratios will increase the depth buffer's
-    // resolution but will also limit the view distance
-    constexpr float kCameraNear  = 0.1f;
-    constexpr float kCameraFar   = 100.f;
-
-    constexpr auto kCameraFov = 60.0_degf;
-}
-
 namespace
 {
     using Clock_ = std::chrono::steady_clock;
     using Secondsf_ = std::chrono::duration<float, std::ratio<1>>;
-    // Helpers:
-
-
-    std::tuple<lut::Image, lut::ImageView> create_depth_buffer(lut::VulkanWindow const&, lut::Allocator const&);
 
     void create_swapchain_framebuffers(
             lut::VulkanWindow const&,
@@ -78,14 +62,6 @@ namespace
             std::vector<lut::Framebuffer>&,
             VkImageView aDepthView
     );
-
-    void update_scene_uniforms(
-            glsl::SceneUniform&,
-            std::uint32_t aFramebufferWidth,
-            std::uint32_t aFramebufferHeight,
-            UserState const& state
-    );
-
 
     void present_results(
             VkQueue,
@@ -106,8 +82,6 @@ int main() try
     auto limits = windowInfo.second;
 
     std::cout<<" Max bias: " << limits.maxSamplerLodBias << std::endl;
-
-
 
     //Configure GLFW window
     UserState state{};
@@ -209,8 +183,8 @@ int main() try
        }
 
 
-       //Create default texture sampler
-       bool anisotropicFiltering = lut::anisotropic_filtering(window.physicalDevice);
+    //Create default texture sampler
+    bool anisotropicFiltering = lut::anisotropic_filtering(window.physicalDevice);
     anisotropicFiltering = false; // Anisotropic filtering should be disabled when visualising mipmaps.
 
        lut::Sampler defaultSampler = lut::create_default_sampler(window, anisotropicFiltering, limits.maxSamplerAnisotropy );
@@ -368,7 +342,6 @@ int main() try
                                           texturedMeshes,
                                           descriptors);
 
-
         submit_commands(
                 window,
                 cbuffers[imageIndex],
@@ -402,29 +375,6 @@ catch( std::exception const& eErr )
 
 
 
-
-
-namespace {
-
-    void update_scene_uniforms( glsl::SceneUniform& aSceneUniforms, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight, UserState const& aState)
-    {
-        float const aspect = aFramebufferWidth / float(aFramebufferHeight);
-
-        aSceneUniforms.projection = glm::perspectiveRH_ZO(
-                lut::Radians(cfg::kCameraFov).value(),
-                aspect,
-                cfg::kCameraNear,
-                cfg::kCameraFar
-        );
-        aSceneUniforms.projection[1][1] *= -1.f; //Mirror y axis
-        aSceneUniforms.camera = glm::translate(glm::vec3(0.f, -0.3f, -1.f));
-        aSceneUniforms.camera = aSceneUniforms.camera * glm::inverse(aState.camera2world);
-
-        aSceneUniforms.projCam = aSceneUniforms.projection * aSceneUniforms.camera;
-
-    }
-}
-
 namespace {
 
     void create_swapchain_framebuffers(lut::VulkanWindow const& aWindow, VkRenderPass aRenderPass,
@@ -455,62 +405,6 @@ namespace {
         }
 
         assert(aWindow.swapViews.size() == aFramebuffers.size());
-    }
-
-
-    std::tuple<lut::Image, lut::ImageView>
-    create_depth_buffer(lut::VulkanWindow const& aWindow, lut::Allocator const& aAllocator) {
-        VkImageCreateInfo imageInfo {};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.format = cfg::kDepthFormat;
-        imageInfo.extent.width = aWindow.swapchainExtent.width;
-        imageInfo.extent.height = aWindow.swapchainExtent.height;
-        imageInfo.extent.depth = 1;
-        imageInfo.mipLevels = 1;
-        imageInfo.arrayLayers = 1;
-        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-        VmaAllocationCreateInfo allocInfo {};
-        allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-        VkImage image = VK_NULL_HANDLE;
-        VmaAllocation allocation = VK_NULL_HANDLE;
-
-        if (auto const res = vmaCreateImage(aAllocator.allocator, &imageInfo, &allocInfo, &image, &allocation, nullptr);
-                VK_SUCCESS != res) {
-            throw lut::Error("Unable to allocate depth buffer image.\n"
-                             "vmaCreateImage() returned %s", lut::to_string(res).c_str()
-            );
-        }
-
-        lut::Image depthImage(aAllocator.allocator, image, allocation);
-
-        // Create the image view
-        VkImageViewCreateInfo viewInfo {};
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = depthImage.image;
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = cfg::kDepthFormat;
-        viewInfo.components = VkComponentMapping {};
-        viewInfo.subresourceRange = VkImageSubresourceRange {
-                VK_IMAGE_ASPECT_DEPTH_BIT,
-                0, 1,
-                0, 1
-        };
-
-        VkImageView view = VK_NULL_HANDLE;
-        if (auto const res = vkCreateImageView(aWindow.device, &viewInfo, nullptr, &view);VK_SUCCESS != res) {
-            throw lut::Error("Unable to create image view\n"
-                             "vkCreateImageView() returned %s", lut::to_string(res).c_str()
-            );
-        }
-
-        return {std::move(depthImage), lut::ImageView(aWindow.device, view)};
     }
 
 

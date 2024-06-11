@@ -4,6 +4,24 @@
 
 #include "descriptor.hpp"
 
+void update_scene_uniforms( glsl::SceneUniform& aSceneUniforms, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight, UserState const& aState)
+{
+    float const aspect = aFramebufferWidth / float(aFramebufferHeight);
+
+    aSceneUniforms.projection = glm::perspectiveRH_ZO(
+            labutils::Radians(cfg::kCameraFov).value(),
+            aspect,
+            cfg::kCameraNear,
+            cfg::kCameraFar
+    );
+    aSceneUniforms.projection[1][1] *= -1.f; //Mirror y axis
+    aSceneUniforms.camera = glm::translate(glm::vec3(0.f, -0.3f, -1.f));
+    aSceneUniforms.camera = aSceneUniforms.camera * glm::inverse(aState.camera2world);
+
+    aSceneUniforms.projCam = aSceneUniforms.projection * aSceneUniforms.camera;
+
+}
+
 std::vector<TexturedMesh> create_textured_meshes(labutils::VulkanContext const& window, labutils::Allocator const& allocator, SimpleModel& obj ){
     std::vector<TexturedMesh>  texturedMeshes;
     for (unsigned int mesh = 0; mesh < obj.meshes.size(); ++mesh) {

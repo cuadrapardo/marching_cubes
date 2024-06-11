@@ -11,31 +11,6 @@
 
 #include "render_constants.hpp"
 
-enum class EInputState
-{
-    forward,
-    backward,
-    strafeLeft,
-    strafeRight,
-    levitate,
-    sink,
-    fast,
-    slow,
-    mousing,
-    max
-};
-
-struct UserState
-{
-    bool inputMap[std::size_t(EInputState::max)] = {};
-
-    float mouseX = 0.f, mouseY = 0.f;
-    float previousX = 0.f, previousY = 0.f;
-
-    bool wasMousing = false;
-
-    glm::mat4 camera2world = glm::identity<glm::mat4>();
-};
 
 
 void update_user_state(UserState& user, float aElapsedTime);

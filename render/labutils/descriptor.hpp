@@ -20,6 +20,13 @@
 
 std::vector<TexturedMesh> create_textured_meshes(labutils::VulkanContext const &window, labutils::Allocator const &allocator, SimpleModel& obj);
 
+void update_scene_uniforms(
+        glsl::SceneUniform&,
+        std::uint32_t aFramebufferWidth,
+        std::uint32_t aFramebufferHeight,
+        UserState const& state
+);
+
 labutils::DescriptorSetLayout create_scene_descriptor_layout( labutils::VulkanWindow const& );
 labutils::DescriptorSetLayout create_object_descriptor_layout( labutils::VulkanWindow const& );
 
