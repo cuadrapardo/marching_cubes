@@ -31,12 +31,12 @@
 #include "../labutils/angle.hpp"
 using namespace labutils::literals;
 
-#define DISPLAY_OVERDRAW
 
 #include "../labutils/error.hpp"
 #include "../labutils/vkutil.hpp"
 #include "../labutils/vkimage.hpp"
 #include "../labutils/vkobject.hpp"
+#include "../labutils/camera.hpp"
 #include "../labutils/vkbuffer.hpp"
 #include "../labutils/allocator.hpp"
 
@@ -45,44 +45,6 @@ namespace lut = labutils;
 #include "simple_model.hpp"
 #include "load_model_obj.hpp"
 
-namespace camera {
-    //Camera Settings:
-    constexpr float kCameraBaseSpeed = 1.7f; // units/second
-    constexpr float kCameraFastMult = 5.f; // speed multiplier
-    constexpr float kCameraSlowMult = 0.05f; // speed multiplier
-
-    constexpr float kCameraMouseSensitivity = 0.01f; // radians per pixel
-
-    enum class EInputState
-    {
-        forward,
-        backward,
-        strafeLeft,
-        strafeRight,
-        levitate,
-        sink,
-        fast,
-        slow,
-        mousing,
-        max
-    };
-
-    struct UserState
-    {
-        bool inputMap[std::size_t(EInputState::max)] = {};
-
-        float mouseX = 0.f, mouseY = 0.f;
-        float previousX = 0.f, previousY = 0.f;
-
-        bool wasMousing = false;
-
-        glm::mat4 camera2world = glm::identity<glm::mat4>();
-    };
-
-
-    void update_user_state(UserState& user, float aElapsedTime);
-
-}
 
 
 struct TexturedMesh{
@@ -107,24 +69,9 @@ namespace
 
 #		define SHADERDIR_ "assets/cw1/shaders/"
 		constexpr char const* kVertShaderPath = SHADERDIR_ "default.vert.spv";
-#ifdef DISPLAY_MIPMAP_LEVELS
-        constexpr char const* kFragShaderPath = SHADERDIR_ "mipmap.frag.spv";
-#elif defined(DISPLAY_FRAGMENT_DEPTH)
-        constexpr char const* kFragShaderPath = SHADERDIR_ "depth.frag.spv";
-#elif defined(DISPLAY_PARTIAL_DERIVATIVES)
-        constexpr char const* kFragShaderPath = SHADERDIR_ "partial_derivative.frag.spv";
-#else
         constexpr char const* kFragShaderPath = SHADERDIR_ "default.frag.spv";
-#endif
 #		undef SHADERDIR_
 
-#		define TEXTUREDIR_ "assets/cw1/textures/"
-#ifdef DISPLAY_OVERSHADE
-        constexpr char const* kGreenTexture = TEXTUREDIR_ "green.jpeg";
-#elif defined(DISPLAY_OVERDRAW)
-        constexpr char const* kGreenTexture = TEXTUREDIR_ "green.jpeg";
-#endif
-#		undef TEXTUREDIR_
 
         // Models
 #       define MODELDIR_ "assets/cw1/"
@@ -193,7 +140,7 @@ namespace
             glsl::SceneUniform&,
             std::uint32_t aFramebufferWidth,
             std::uint32_t aFramebufferHeight,
-            camera::UserState const& state
+            UserState const& state
     );
 
 
@@ -239,7 +186,7 @@ int main() try
 
 
     //Configure GLFW window
-    camera::UserState state{};
+    UserState state{};
     glfwSetWindowUserPointer(window.window, &state);
     glfwSetKeyCallback(window.window, &glfw_callback_key_press);
     glfwSetMouseButtonCallback(window.window, &glfw_callback_button);
@@ -323,15 +270,7 @@ int main() try
     {
         lut::CommandPool loadCmdPool = lut::create_command_pool(window, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
         for(unsigned int mesh = 0; mesh < texturedMeshes.size(); ++mesh) {
-#ifdef DISPLAY_OVERSHADE
-            //Use a green texture for all meshes.
-            lut::Image currentTex =  lut::load_image_texture2d(cfg::kGreenTexture, window, loadCmdPool.handle, allocator);
-#elif defined(DISPLAY_OVERDRAW)
-            //Use a green texture for all meshes.
-            lut::Image currentTex =  lut::load_image_texture2d(cfg::kGreenTexture, window, loadCmdPool.handle, allocator);
-#else
             lut::Image currentTex = lut::load_image_texture2d(texturedMeshes[mesh].diffuseTexturePath.c_str(), window, loadCmdPool.handle, allocator);
-#endif
             meshImages.emplace_back(std::move(currentTex));
         }
     }
@@ -348,11 +287,7 @@ int main() try
 
        //Create default texture sampler
        bool anisotropicFiltering = lut::anisotropic_filtering(window.physicalDevice);
-
-#ifdef DISPLAY_MIPMAP_LEVELS
-    std::cout << "Running program without anisotropic filtering." << std::endl;
     anisotropicFiltering = false; // Anisotropic filtering should be disabled when visualising mipmaps.
-#endif
 
        lut::Sampler defaultSampler = lut::create_default_sampler(window, anisotropicFiltering, limits.maxSamplerAnisotropy );
 
@@ -547,39 +482,39 @@ namespace
 {
     void glfw_callback_key_press( GLFWwindow* aWindow, int aKey, int /*aScanCode*/, int aAction, int /*aModifierFlags*/ )
     {
-        auto state = static_cast<camera::UserState*>(glfwGetWindowUserPointer( aWindow ));
+        auto state = static_cast<UserState*>(glfwGetWindowUserPointer( aWindow ));
         assert( state );
 
         bool const isReleased = (GLFW_RELEASE == aAction);
 
         switch( aKey ) {
             case GLFW_KEY_W:
-                state->inputMap[std::size_t(camera::EInputState::forward)] = !isReleased;
+                state->inputMap[std::size_t(EInputState::forward)] = !isReleased;
                 break;
             case GLFW_KEY_S:
-                state->inputMap[std::size_t(camera::EInputState::backward)] = !isReleased;
+                state->inputMap[std::size_t(EInputState::backward)] = !isReleased;
                 break;
             case GLFW_KEY_A:
-                state->inputMap[std::size_t(camera::EInputState::strafeLeft)] = !isReleased;
+                state->inputMap[std::size_t(EInputState::strafeLeft)] = !isReleased;
                 break;
             case GLFW_KEY_D:
-                state->inputMap[std::size_t(camera::EInputState::strafeRight)] = !isReleased;
+                state->inputMap[std::size_t(EInputState::strafeRight)] = !isReleased;
                 break;
             case GLFW_KEY_E:
-                state->inputMap[std::size_t(camera::EInputState::levitate)] = !isReleased;
+                state->inputMap[std::size_t(EInputState::levitate)] = !isReleased;
                 break;
             case GLFW_KEY_Q:
-                state->inputMap[std::size_t(camera::EInputState::sink)] = !isReleased;
+                state->inputMap[std::size_t(EInputState::sink)] = !isReleased;
                 break;
             case GLFW_KEY_LEFT_SHIFT:
                 [[fallthrough]];
             case GLFW_KEY_RIGHT_SHIFT:
-                state->inputMap[std::size_t(camera::EInputState::fast)] = !isReleased;
+                state->inputMap[std::size_t(EInputState::fast)] = !isReleased;
                 break;
             case GLFW_KEY_LEFT_CONTROL:
                 [[fallthrough]];
             case GLFW_KEY_RIGHT_CONTROL:
-                state->inputMap[std::size_t(camera::EInputState::slow)] = !isReleased;
+                state->inputMap[std::size_t(EInputState::slow)] = !isReleased;
                 break;
             case GLFW_KEY_ESCAPE:
                 glfwSetWindowShouldClose( aWindow, GLFW_TRUE );
@@ -590,11 +525,11 @@ namespace
     }
 
     void glfw_callback_button( GLFWwindow* aWin, int aBut, int aAct, int ){
-        auto state = static_cast<camera::UserState*>(glfwGetWindowUserPointer( aWin ));
+        auto state = static_cast<UserState*>(glfwGetWindowUserPointer( aWin ));
         assert( state );
 
         if( GLFW_MOUSE_BUTTON_RIGHT == aBut && GLFW_PRESS == aAct ){
-            auto& flag = state->inputMap[std::size_t(camera::EInputState::mousing)];
+            auto& flag = state->inputMap[std::size_t(EInputState::mousing)];
 
             flag = !flag;
             if( flag )
@@ -605,7 +540,7 @@ namespace
     }
 
     void glfw_callback_motion( GLFWwindow* aWin, double aX, double aY ) {
-        auto state = static_cast<camera::UserState*>(glfwGetWindowUserPointer( aWin ));
+        auto state = static_cast<UserState*>(glfwGetWindowUserPointer( aWin ));
         assert( state );
         state->mouseX = float(aX);
         state->mouseY = float(aY);
@@ -613,52 +548,9 @@ namespace
 
 }
 
-namespace camera {
-    void update_user_state( UserState& aState, float aElapsedTime ){
-        auto& cam = aState.camera2world;
 
-        if( aState.inputMap[std::size_t(EInputState::mousing)] )
-        {
-            // Only update the rotation on the second frame of mouse navigation. This ensures that the previousX
-            // and Y variables are initialized to sensible values.
-            if( aState.wasMousing )
-            {
-                auto const sens = camera::kCameraMouseSensitivity;
-                auto const dx = sens * (aState.mouseX-aState.previousX);
-                auto const dy = sens * (aState.mouseY-aState.previousY);
 
-                cam = cam * glm::rotate( -dy, glm::vec3( 1.f, 0.f, 0.f ) );
-                cam = cam * glm::rotate( -dx, glm::vec3( 0.f, 1.f, 0.f ) );
-            }
 
-            aState.previousX = aState.mouseX;
-            aState.previousY = aState.mouseY;
-            aState.wasMousing = true;
-        }
-        else
-        {
-            aState.wasMousing = false;
-        }
-
-        auto const move = aElapsedTime * camera::kCameraBaseSpeed *
-                          (aState.inputMap[std::size_t(EInputState::fast)] ? camera::kCameraFastMult:1.f) *
-                          (aState.inputMap[std::size_t(EInputState::slow)] ? camera::kCameraSlowMult:1.f);
-        if( aState.inputMap[std::size_t(EInputState::forward)] )
-            cam = cam * glm::translate( glm::vec3( 0.f, 0.f, -move ) );
-        if( aState.inputMap[std::size_t(EInputState::backward)] )
-            cam = cam * glm::translate( glm::vec3( 0.f, 0.f, +move ) );
-
-        if( aState.inputMap[std::size_t(EInputState::strafeLeft)] )
-            cam = cam * glm::translate( glm::vec3( -move, 0.f, 0.f ) );
-        if( aState.inputMap[std::size_t(EInputState::strafeRight)] )
-            cam = cam * glm::translate( glm::vec3( +move, 0.f, 0.f ) );
-
-        if( aState.inputMap[std::size_t(EInputState::levitate)] )
-            cam = cam * glm::translate( glm::vec3( 0.f, +move, 0.f ) );
-        if( aState.inputMap[std::size_t(EInputState::sink)] )
-            cam = cam * glm::translate( glm::vec3( 0.f, -move, 0.f ) );
-    }
-}
 
 namespace {
     std::vector<TexturedMesh> create_textured_meshes(labutils::VulkanContext const& window, labutils::Allocator const& allocator, SimpleModel& obj ){
@@ -874,7 +766,7 @@ namespace {
         }
         return texturedMeshes;
     }
-    void update_scene_uniforms( glsl::SceneUniform& aSceneUniforms, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight, camera::UserState const& aState)
+    void update_scene_uniforms( glsl::SceneUniform& aSceneUniforms, std::uint32_t aFramebufferWidth, std::uint32_t aFramebufferHeight, UserState const& aState)
     {
         float const aspect = aFramebufferWidth / float(aFramebufferHeight);
 
