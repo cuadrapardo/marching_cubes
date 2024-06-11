@@ -43,21 +43,13 @@ using namespace labutils::literals;
 #include "../labutils/allocator.hpp"
 #include "../labutils/render_constants.hpp"
 #include "../labutils/descriptor.hpp"
+#include "../labutils/commands.hpp"
 
 namespace lut = labutils;
 
 #include "simple_model.hpp"
 #include "load_model_obj.hpp"
 
-struct TexturedMesh{
-    labutils::Buffer positions;
-    labutils::Buffer texcoords;
-    labutils::Buffer color;
-
-    std::string diffuseTexturePath;
-
-    std::uint32_t vertexCount;
-};
 
 namespace cfg {
     // General rule: with a standard 24 bit or 32 bit float depth buffer,
@@ -76,21 +68,7 @@ namespace
     using Clock_ = std::chrono::steady_clock;
     using Secondsf_ = std::chrono::duration<float, std::ratio<1>>;
 
-    // Uniform data
-    namespace glsl
-    {
-        struct SceneUniform{
-            glm::mat4 camera;
-            glm::mat4 projection;
-            glm::mat4 projCam;
-        };
-        //vkCmdUpdateBuffer() has certain requirements, including the two below:
-        static_assert(sizeof(SceneUniform) <= 65536, "SceneUniform must be less than 65536 bytes for vkCmdUpdateBuffer");
 
-        static_assert(sizeof(SceneUniform) % 4 == 0,
-                      "SceneUniform size must be a multiple of 4 bytes");
-
-    }
 
     // Helpers:
     std::vector<TexturedMesh> create_textured_meshes(labutils::VulkanContext const &window, labutils::Allocator const &allocator, SimpleModel& obj);
@@ -113,25 +91,6 @@ namespace
     );
 
 
-    void record_commands_textured( VkCommandBuffer,
-                                   VkRenderPass,
-                                   VkFramebuffer,
-                                   VkPipeline,
-                                   VkExtent2D const&,
-                                   VkBuffer aSceneUBO,
-                                   glsl::SceneUniform const&,
-                                   VkPipelineLayout,
-                                   VkDescriptorSet sceneDescriptors,
-                                   std::vector<TexturedMesh> const& meshes,
-                                   std::vector<VkDescriptorSet> const& meshDescriptors);
-
-    void submit_commands(
-            lut::VulkanWindow const&,
-            VkCommandBuffer,
-            VkFence,
-            VkSemaphore,
-            VkSemaphore
-    );
     void present_results(
             VkQueue,
             VkSwapchainKHR,
@@ -684,8 +643,8 @@ namespace {
 
 namespace {
 
-    void create_swapchain_framebuffers(lut::VulkanWindow const &aWindow, VkRenderPass aRenderPass,
-                                       std::vector<lut::Framebuffer> &aFramebuffers, VkImageView aDepthView) {
+    void create_swapchain_framebuffers(lut::VulkanWindow const& aWindow, VkRenderPass aRenderPass,
+                                       std::vector<lut::Framebuffer>& aFramebuffers, VkImageView aDepthView) {
         assert(aFramebuffers.empty());
 
         for (std::size_t i = 0; i < aWindow.swapViews.size(); ++i) {
@@ -693,7 +652,7 @@ namespace {
                     aWindow.swapViews[i],
                     aDepthView
             };
-            VkFramebufferCreateInfo fbInfo{};
+            VkFramebufferCreateInfo fbInfo {};
             fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
             fbInfo.flags = 0;
             fbInfo.renderPass = aRenderPass;
@@ -715,12 +674,9 @@ namespace {
     }
 
 
-
-
-
     std::tuple<lut::Image, lut::ImageView>
-    create_depth_buffer(lut::VulkanWindow const &aWindow, lut::Allocator const &aAllocator) {
-        VkImageCreateInfo imageInfo{};
+    create_depth_buffer(lut::VulkanWindow const& aWindow, lut::Allocator const& aAllocator) {
+        VkImageCreateInfo imageInfo {};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
         imageInfo.format = cfg::kDepthFormat;
@@ -735,7 +691,7 @@ namespace {
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-        VmaAllocationCreateInfo allocInfo{};
+        VmaAllocationCreateInfo allocInfo {};
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
         VkImage image = VK_NULL_HANDLE;
@@ -751,13 +707,13 @@ namespace {
         lut::Image depthImage(aAllocator.allocator, image, allocation);
 
         // Create the image view
-        VkImageViewCreateInfo viewInfo{};
+        VkImageViewCreateInfo viewInfo {};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = depthImage.image;
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.format = cfg::kDepthFormat;
-        viewInfo.components = VkComponentMapping{};
-        viewInfo.subresourceRange = VkImageSubresourceRange{
+        viewInfo.components = VkComponentMapping {};
+        viewInfo.subresourceRange = VkImageSubresourceRange {
                 VK_IMAGE_ASPECT_DEPTH_BIT,
                 0, 1,
                 0, 1
@@ -773,124 +729,11 @@ namespace {
         return {std::move(depthImage), lut::ImageView(aWindow.device, view)};
     }
 
-    //Record commands for textured data
-    void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPass, VkFramebuffer aFramebuffer,
-                                   VkPipeline aGraphicsPipe, VkExtent2D const& aImageExtent, VkBuffer aSceneUBO,
-                                   glsl::SceneUniform const& aSceneUniform,  VkPipelineLayout aGraphicsLayout,
-                                   VkDescriptorSet aSceneDescriptors, std::vector<TexturedMesh> const& meshes, std::vector<VkDescriptorSet> const& meshDescriptors){
-        //Begin recording commands
-        VkCommandBufferBeginInfo begInfo{};
-        begInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        begInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        begInfo.pInheritanceInfo = nullptr;
-
-        if (auto const res = vkBeginCommandBuffer(aCmdBuff, &begInfo); VK_SUCCESS != res) {
-            throw lut::Error("Unable to begin recording command buffer\n"
-                             "vkBeginCommandBuffer() returned %s", lut::to_string(res).c_str());
-        }
-        //Upload Scene uniforms
-        lut::buffer_barrier(aCmdBuff,
-                            aSceneUBO,
-                            VK_ACCESS_UNIFORM_READ_BIT,
-                            VK_ACCESS_TRANSFER_WRITE_BIT,
-                            VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-                            VK_PIPELINE_STAGE_TRANSFER_BIT
-        );
-        vkCmdUpdateBuffer(aCmdBuff, aSceneUBO, 0, sizeof(glsl::SceneUniform), &aSceneUniform);
-
-        lut::buffer_barrier(aCmdBuff,
-                            aSceneUBO,
-                            VK_ACCESS_TRANSFER_WRITE_BIT,
-                            VK_ACCESS_UNIFORM_READ_BIT,
-                            VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
-        );
-
-        //Begin Render pass
-        VkClearValue clearValues[2]{};
-        clearValues[0].color.float32[0] = 0.1f; // Clear to a dark gray background.
-        clearValues[0].color.float32[1] = 0.1f; // If we were debugging, this would potentially
-        clearValues[0].color.float32[2] = 0.1f; // help us see whether the render pass took
-        clearValues[0].color.float32[3] = 1.f; // place, even if nothing else was drawn.
-
-        clearValues[1].depthStencil.depth = 1.f;
-
-        VkRenderPassBeginInfo passInfo{};
-        passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        passInfo.renderPass = aRenderPass;
-        passInfo.framebuffer = aFramebuffer;
-        passInfo.renderArea.offset = VkOffset2D{0, 0};
-        passInfo.renderArea.extent = aImageExtent;
-        passInfo.clearValueCount = 2;
-        passInfo.pClearValues = clearValues;
-
-
-
-        vkCmdBeginRenderPass(aCmdBuff, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        //Begin drawing with our graphics pipeline
-        vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aGraphicsPipe);
-
-        //Uniforms
-        vkCmdBindDescriptorSets(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aGraphicsLayout, 0, 1,
-                                &aSceneDescriptors, 0, nullptr);
-
-        //Bind and draw all meshes in the scene
-        for(unsigned int mesh = 0; mesh < meshes.size(); mesh++){
-            //Bind vertex input
-            VkBuffer buffers[3] = {meshes[mesh].positions.buffer, meshes[mesh].texcoords.buffer, meshes[mesh].color.buffer};
-            VkDeviceSize offsets[3]{};
-
-
-            //Bind texture
-            vkCmdBindDescriptorSets(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aGraphicsLayout, 1, 1, &meshDescriptors[mesh],
-                                    0,
-                                    nullptr);
-
-            vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
-
-            //Draw vertices
-            vkCmdDraw(aCmdBuff, meshes[mesh].vertexCount, 1, 0, 0);
-
-        }
-
-        //End the render pass
-        vkCmdEndRenderPass(aCmdBuff);
-
-        //End command recording
-        if (auto const res = vkEndCommandBuffer(aCmdBuff); VK_SUCCESS != res) {
-            throw lut::Error("unable to end recording command buffer\n"
-                             "vkEndCommandBuffer() returned %s", lut::to_string(res).c_str());
-        }
-
-
-    }
-
-    void submit_commands(lut::VulkanWindow const &aWindow, VkCommandBuffer aCmdBuff, VkFence aFence,
-                         VkSemaphore aWaitSemaphore, VkSemaphore aSignalSemaphore) {
-        VkPipelineStageFlags waitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &aCmdBuff;
-
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = &aWaitSemaphore;
-        submitInfo.pWaitDstStageMask = &waitPipelineStages;
-
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &aSignalSemaphore;
-
-        if (auto const res = vkQueueSubmit(aWindow.graphicsQueue, 1, &submitInfo, aFence); VK_SUCCESS != res) {
-            throw lut::Error("Unable to submit command buffer to queue\n"
-                             "vkQueueSubmit() returned %s", lut::to_string(res).c_str());
-        }
-    }
 
     void present_results(VkQueue aPresentQueue, VkSwapchainKHR aSwapchain, std::uint32_t aImageIndex,
-                         VkSemaphore aRenderFinished, bool &aNeedToRecreateSwapchain) {
+                         VkSemaphore aRenderFinished, bool& aNeedToRecreateSwapchain) {
         //Present rendered images.
-        VkPresentInfoKHR presentInfo{};
+        VkPresentInfoKHR presentInfo {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = &aRenderFinished;
@@ -909,6 +752,7 @@ namespace {
         }
     }
 }
+
 
 //endregion
 
