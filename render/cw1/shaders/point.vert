@@ -15,7 +15,7 @@ layout(location = 0) out vec3 v2fColor;
 
 void main() {
     gl_Position = uScene.projCam * vec4(iPosition, 1.0);
-    gl_PointSize = 1.0; // point size. TODO: Adjust with scalar field value
+    gl_PointSize = 5.0; // point size. TODO: Adjust with scalar field value
 
     v2fColor = iColor;
 }

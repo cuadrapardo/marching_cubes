@@ -65,6 +65,7 @@ namespace cfg
     // Models
 #       define MODELDIR_ "assets/cw1/"
     constexpr char const* sponzaObj = MODELDIR_ "sponza_with_ship.obj";
+    constexpr char const* torusTri = MODELDIR_ "fuelinject.tri";
 #       undef MODELDIR_
 
 

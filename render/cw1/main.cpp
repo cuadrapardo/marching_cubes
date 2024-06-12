@@ -156,13 +156,16 @@ int main() try
         vkUpdateDescriptorSets(window.device, numSets, desc, 0, nullptr);
     }
 
+    //Load file obj, .tri, todo: point cloud format
+    PointCloud pointCloud = load_file(cfg::torusTri, window, allocator);
+
     // Load obj file
-    SimpleModel obj = load_simple_wavefront_obj(cfg::sponzaObj);
+//    SimpleModel obj = load_simple_wavefront_obj(cfg::sponzaObj);
 
     //Create textured meshes from the obj
 //    std::vector<TexturedMesh> texturedMeshes = create_textured_meshes(window, allocator, obj);
     //Create point cloud from the obj
-    PointCloud pointCloud = obj_to_pointcloud(obj, window, allocator);
+//    PointCloud pointCloud = obj_to_pointcloud(obj, window, allocator);
 
     //Load textures into image
     /* textured meshes

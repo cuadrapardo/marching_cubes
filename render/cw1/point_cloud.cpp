@@ -10,16 +10,13 @@
 #include <algorithm>
 #include <cstring>
 
-//Creates buffers to hold position & color information
-PointCloud obj_to_pointcloud(SimpleModel& obj_file, labutils::VulkanContext const& window, labutils::Allocator const& allocator ) {
-    std::uint32_t positions_size = sizeof(obj_file.dataUntextured.positions[0]) * (obj_file.dataUntextured.positions.size() + obj_file.dataTextured.positions.size());
+//TODO: pass in glm::vec3 of colors corresponding to each vertex
+PointCloud create_pointcloud(std::vector<glm::vec3> positions, labutils::VulkanContext const& window, labutils::Allocator const& allocator ) {
+    std::uint32_t positions_size = sizeof(positions[0]) * (positions.size());
     std::uint32_t color_size = positions_size;
 
-    std::vector<glm::vec3> positions, colors;
-    positions.insert(positions.end(), obj_file.dataTextured.positions.begin(),  obj_file.dataTextured.positions.end());
-    positions.insert(positions.end(), obj_file.dataUntextured.positions.begin(),  obj_file.dataUntextured.positions.end());
-
     //Add color (default to red)
+    std::vector<glm::vec3> colors;
     colors.resize(positions.size());
     std::fill(colors.begin(), colors.end(), glm::vec3{1.0f, 0.0f, 0.0f});
 
@@ -142,9 +139,11 @@ PointCloud obj_to_pointcloud(SimpleModel& obj_file, labutils::VulkanContext cons
     }
 
     return PointCloud {
-        std::move(vertexPosGPU),
-        std::move(vertexColGPU),
-        static_cast<uint32_t>(positions.size())
+            std::move(vertexPosGPU),
+            std::move(vertexColGPU),
+            static_cast<uint32_t>(positions.size())
     };
 
+
 }
+

@@ -16,6 +16,7 @@ struct PointCloud {
     std::uint32_t vertex_count;
 };
 
-PointCloud obj_to_pointcloud(SimpleModel& obj_file, labutils::VulkanContext const& window, labutils::Allocator const& allocator );
+
+PointCloud create_pointcloud(std::vector<glm::vec3> positions, labutils::VulkanContext const& window, labutils::Allocator const& allocator );
 
 #endif //MARCHING_CUBES_POINT_CLOUD_POINT_CLOUD_HPP
