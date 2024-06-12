@@ -168,21 +168,11 @@ labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRend
     VkPipelineDepthStencilStateCreateInfo depthInfo{};
     depthInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 
-#ifdef DISPLAY_OVERDRAW
-    //We want to disable early z discard to visualise overdraw.
-        depthInfo.depthTestEnable = VK_FALSE;
-        depthInfo.depthWriteEnable = VK_FALSE;
-        depthInfo.depthCompareOp = VK_COMPARE_OP_ALWAYS;
-        depthInfo.depthBoundsTestEnable = VK_FALSE;
-        depthInfo.stencilTestEnable = VK_FALSE;
-
-#else
     depthInfo.depthTestEnable = VK_TRUE;
     depthInfo.depthWriteEnable = VK_TRUE;
     depthInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
     depthInfo.minDepthBounds = 0.f;
     depthInfo.maxDepthBounds = 1.f;
-#endif
 
     //Fragment shader
     stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -191,22 +181,18 @@ labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRend
     stages[1].pName = "main";
 
     //Position
-    VkVertexInputBindingDescription vertexInputs[3]{};
+    VkVertexInputBindingDescription vertexInputs[2]{};
     vertexInputs[0].binding = 0;
     vertexInputs[0].stride = sizeof(float) * 3;
     vertexInputs[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    //Texcoords
+    //Color
     vertexInputs[1].binding = 1;
-    vertexInputs[1].stride = sizeof(float) * 2;
+    vertexInputs[1].stride = sizeof(float) * 3;
     vertexInputs[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    //Color
-    vertexInputs[2].binding = 2;
-    vertexInputs[2].stride = sizeof(float) * 3;
-    vertexInputs[2].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    VkVertexInputAttributeDescription vertexAttributes[3]{};
+    VkVertexInputAttributeDescription vertexAttributes[2]{};
     vertexAttributes[0].binding = 0; //must match binding above
     vertexAttributes[0].location = 0; //must match shader
     vertexAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -214,26 +200,21 @@ labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRend
 
     vertexAttributes[1].binding = 1; // must match binding above
     vertexAttributes[1].location = 1; //ditto
-    vertexAttributes[1].format = VK_FORMAT_R32G32_SFLOAT;
+    vertexAttributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
     vertexAttributes[1].offset = 0;
-
-    vertexAttributes[2].binding = 2; //must match binding above
-    vertexAttributes[2].location = 2; //must match shader
-    vertexAttributes[2].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertexAttributes[2].offset = 0;
 
     //Vertex input state
     VkPipelineVertexInputStateCreateInfo inputInfo{};
     inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    inputInfo.vertexBindingDescriptionCount = 3; //number of vertexInputs above
+    inputInfo.vertexBindingDescriptionCount = 2; //number of vertexInputs above
     inputInfo.pVertexBindingDescriptions = vertexInputs;
-    inputInfo.vertexAttributeDescriptionCount = 3; //number of vertexAttributes above
+    inputInfo.vertexAttributeDescriptionCount = 2; //number of vertexAttributes above
     inputInfo.pVertexAttributeDescriptions = vertexAttributes;
 
     //Input Assembly State
     VkPipelineInputAssemblyStateCreateInfo assemblyInfo{};
     assemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    assemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    assemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; // render points
     assemblyInfo.primitiveRestartEnable = VK_FALSE;
 
     //Viewport state. Define viewport and scissor regions
@@ -275,7 +256,6 @@ labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRend
     //Define blend state
     VkPipelineColorBlendAttachmentState blendStates[1] = {};
     VkPipelineColorBlendStateCreateInfo blendInfo = {};
-
 
     // We define one blend state per colour attachment.
     blendStates[0].blendEnable = VK_FALSE;
