@@ -13,7 +13,7 @@
 #include "to_string.hpp"
 #include "allocator.hpp"
 #include "../cw1/simple_model.hpp"
-#include "../cw1/load_model_obj.hpp"
+#include "../cw1/load_model.hpp"
 #include "render_constants.hpp"
 #include "vkutil.hpp"
 

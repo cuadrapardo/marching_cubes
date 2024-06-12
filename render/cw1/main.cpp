@@ -48,7 +48,7 @@ using namespace labutils::literals;
 namespace lut = labutils;
 
 #include "simple_model.hpp"
-#include "load_model_obj.hpp"
+#include "load_model.hpp"
 #include "point_cloud.hpp"
 
 

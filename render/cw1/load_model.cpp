@@ -1,4 +1,4 @@
-#include "load_model_obj.hpp"
+#include "load_model.hpp"
 
 #include <unordered_set>
 
