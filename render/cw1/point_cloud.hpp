@@ -10,11 +10,10 @@
 
 
 struct PointCloud {
-    std::vector<glm::vec3> points;
-    std::vector<glm::vec3> colors;
-
+    labutils::Buffer positions;
+    labutils::Buffer colors;
 };
 
-PointCloud obj_to_pointcloud(SimpleModel& obj_file); //TODO: do I even need this function?
+PointCloud obj_to_pointcloud(SimpleModel& obj_file, labutils::VulkanContext const& window, labutils::Allocator const& allocator );
 
 #endif //MARCHING_CUBES_POINT_CLOUD_POINT_CLOUD_HPP
