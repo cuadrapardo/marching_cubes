@@ -57,8 +57,8 @@ namespace cfg
     // See sources in cw1/shaders/*.
 
 #		define SHADERDIR_ "assets/cw1/shaders/"
-    constexpr char const* kVertShaderPath = SHADERDIR_ "default.vert.spv";
-    constexpr char const* kFragShaderPath = SHADERDIR_ "default.frag.spv";
+    constexpr char const* kVertShaderPath = SHADERDIR_ "point.vert.spv";
+    constexpr char const* kFragShaderPath = SHADERDIR_ "point.frag.spv";
 #		undef SHADERDIR_
 
 

@@ -12,6 +12,7 @@
 #include "vulkan_window.hpp"
 #include "vkutil.hpp"
 #include "to_string.hpp"
+#include "../cw1/point_cloud.hpp"
 
 
 
@@ -25,8 +26,7 @@ void record_commands_textured( VkCommandBuffer,
                                glsl::SceneUniform const&,
                                VkPipelineLayout,
                                VkDescriptorSet sceneDescriptors,
-                               std::vector<TexturedMesh> const& meshes,
-                               std::vector<VkDescriptorSet> const& meshDescriptors);
+                               PointCloud& pCloud);
 
 void submit_commands(
         labutils::VulkanWindow const&,

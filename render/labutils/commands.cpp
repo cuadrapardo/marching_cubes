@@ -9,7 +9,7 @@
 void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPass, VkFramebuffer aFramebuffer,
                                VkPipeline aGraphicsPipe, VkExtent2D const& aImageExtent, VkBuffer aSceneUBO,
                                glsl::SceneUniform const& aSceneUniform,  VkPipelineLayout aGraphicsLayout,
-                               VkDescriptorSet aSceneDescriptors, std::vector<TexturedMesh> const& meshes, std::vector<VkDescriptorSet> const& meshDescriptors) {
+                               VkDescriptorSet aSceneDescriptors, PointCloud& pCloud) {
     //Begin recording commands
     VkCommandBufferBeginInfo begInfo {};
     begInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -66,11 +66,16 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
     vkCmdBindDescriptorSets(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aGraphicsLayout, 0, 1,
                             &aSceneDescriptors, 0, nullptr);
 
+    //Bind and draw all points in the scene
+//    for(std::size_t point = 0; point )
+
+    /*
     //Bind and draw all meshes in the scene
-    for (unsigned int mesh = 0; mesh < meshes.size(); mesh++) {
+    for (unsigned int mesh = 0; mesh < 5; mesh++) {
         //Bind vertex input
         VkBuffer buffers[3] = {meshes[mesh].positions.buffer, meshes[mesh].texcoords.buffer, meshes[mesh].color.buffer};
         VkDeviceSize offsets[3] {};
+
 
 
         //Bind texture
@@ -84,7 +89,7 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
         //Draw vertices
         vkCmdDraw(aCmdBuff, meshes[mesh].vertexCount, 1, 0, 0);
 
-    }
+    } */
 
     //End the render pass
     vkCmdEndRenderPass(aCmdBuff);

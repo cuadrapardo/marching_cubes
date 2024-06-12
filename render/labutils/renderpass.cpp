@@ -126,11 +126,10 @@ std::tuple<labutils::Image, labutils::ImageView> create_depth_buffer(labutils::V
     return {std::move(depthImage), labutils::ImageView(aWindow.device, view)};
 }
 
-labutils::PipelineLayout create_pipeline_layout(labutils::VulkanContext const &aContext, VkDescriptorSetLayout const &aSceneLayout, VkDescriptorSetLayout const& aObjectLayout ) {
+labutils::PipelineLayout create_pipeline_layout(labutils::VulkanContext const &aContext, VkDescriptorSetLayout const &aSceneLayout ) {
     VkDescriptorSetLayout layouts[] = {
             //Order must match the set=N in the shaders
-            aSceneLayout, //Set 0
-            aObjectLayout //set 1
+            aSceneLayout //Set 0
     };
 
     VkPipelineLayoutCreateInfo layoutInfo{};

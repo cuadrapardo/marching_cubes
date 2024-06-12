@@ -49,6 +49,7 @@ namespace lut = labutils;
 
 #include "simple_model.hpp"
 #include "load_model_obj.hpp"
+#include "point_cloud.hpp"
 
 
 namespace
@@ -81,8 +82,6 @@ int main() try
     auto window = std::move(windowInfo.first);
     auto limits = windowInfo.second;
 
-    std::cout<<" Max bias: " << limits.maxSamplerLodBias << std::endl;
-
     //Configure GLFW window
     UserState state{};
     glfwSetWindowUserPointer(window.window, &state);
@@ -98,9 +97,9 @@ int main() try
     lut::RenderPass renderPass = create_render_pass(window);
 
     lut::DescriptorSetLayout sceneLayout = create_scene_descriptor_layout(window);
-    lut::DescriptorSetLayout objectLayout = create_object_descriptor_layout(window);
+//    lut::DescriptorSetLayout objectLayout = create_object_descriptor_layout(window);
 
-    lut::PipelineLayout pipeLayout = create_pipeline_layout(window, sceneLayout.handle, objectLayout.handle);
+    lut::PipelineLayout pipeLayout = create_pipeline_layout(window, sceneLayout.handle);
     lut::Pipeline pipe = create_pipeline(window, renderPass.handle, pipeLayout.handle);
 
     auto [depthBuffer, depthBufferView] = create_depth_buffer(window, allocator);
@@ -161,9 +160,12 @@ int main() try
     SimpleModel obj = load_simple_wavefront_obj(cfg::sponzaObj);
 
     //Create textured meshes from the obj
-    std::vector<TexturedMesh> texturedMeshes = create_textured_meshes(window, allocator, obj);
+//    std::vector<TexturedMesh> texturedMeshes = create_textured_meshes(window, allocator, obj);
+    //Create point cloud from the obj
+    PointCloud pointCloud = obj_to_pointcloud(obj);
 
     //Load textures into image
+    /* textured meshes
     std::vector<lut::Image>  meshImages;
     {
         lut::CommandPool loadCmdPool = lut::create_command_pool(window, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
@@ -216,6 +218,7 @@ int main() try
            }
            descriptors.emplace_back(meshDescriptors);
        }
+       */
 
 
        // It is better to not create a descriptor set per texture, as meshes will reuse the same textures.
@@ -339,8 +342,8 @@ int main() try
                                           sceneUniforms,
                                           pipeLayout.handle,
                                           sceneDescriptors,
-                                          texturedMeshes,
-                                          descriptors);
+                                          pointCloud
+                                          );
 
         submit_commands(
                 window,

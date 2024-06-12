@@ -20,7 +20,7 @@ labutils::RenderPass create_render_pass( labutils::VulkanWindow const& );
 
 std::tuple<labutils::Image, labutils::ImageView> create_depth_buffer(labutils::VulkanWindow const&, labutils::Allocator const&);
 
-labutils::PipelineLayout create_pipeline_layout(labutils::VulkanContext const&, VkDescriptorSetLayout const&, VkDescriptorSetLayout const& aObjectLayout);
+labutils::PipelineLayout create_pipeline_layout(labutils::VulkanContext const&, VkDescriptorSetLayout const&);
 labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout);
 
 
