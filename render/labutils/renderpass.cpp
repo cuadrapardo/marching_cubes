@@ -213,7 +213,7 @@ labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRend
     //Input Assembly State
     VkPipelineInputAssemblyStateCreateInfo assemblyInfo{};
     assemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    assemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; // render points
+    assemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; //render points
     assemblyInfo.primitiveRestartEnable = VK_FALSE;
 
     //Viewport state. Define viewport and scissor regions

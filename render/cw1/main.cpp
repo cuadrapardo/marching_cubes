@@ -162,7 +162,7 @@ int main() try
     //Create textured meshes from the obj
 //    std::vector<TexturedMesh> texturedMeshes = create_textured_meshes(window, allocator, obj);
     //Create point cloud from the obj
-    PointCloud pointCloud = obj_to_pointcloud(obj);
+    PointCloud pointCloud = obj_to_pointcloud(obj, window, allocator);
 
     //Load textures into image
     /* textured meshes
@@ -219,10 +219,6 @@ int main() try
            descriptors.emplace_back(meshDescriptors);
        }
        */
-
-
-       // It is better to not create a descriptor set per texture, as meshes will reuse the same textures.
-       // Instead, check if the texture with that path has been created and if so, just use that.
 
 
 

@@ -66,30 +66,14 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
     vkCmdBindDescriptorSets(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aGraphicsLayout, 0, 1,
                             &aSceneDescriptors, 0, nullptr);
 
-    //Bind and draw all points in the scene
-//    for(std::size_t point = 0; point )
-
-    /*
-    //Bind and draw all meshes in the scene
-    for (unsigned int mesh = 0; mesh < 5; mesh++) {
-        //Bind vertex input
-        VkBuffer buffers[3] = {meshes[mesh].positions.buffer, meshes[mesh].texcoords.buffer, meshes[mesh].color.buffer};
-        VkDeviceSize offsets[3] {};
+    //Bind vertex buffers
+    VkBuffer buffers[2] {pCloud.positions.buffer, pCloud.colors.buffer};
+    VkDeviceSize offsets[2]{};
 
 
+    vkCmdBindVertexBuffers(aCmdBuff, 0, 2, buffers, offsets);
 
-        //Bind texture
-        vkCmdBindDescriptorSets(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aGraphicsLayout, 1, 1,
-                                &meshDescriptors[mesh],
-                                0,
-                                nullptr);
-
-        vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
-
-        //Draw vertices
-        vkCmdDraw(aCmdBuff, meshes[mesh].vertexCount, 1, 0, 0);
-
-    } */
+    vkCmdDraw(aCmdBuff, pCloud.vertex_count, 1, 0, 0);
 
     //End the render pass
     vkCmdEndRenderPass(aCmdBuff);

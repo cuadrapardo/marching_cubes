@@ -20,6 +20,7 @@ PointCloud obj_to_pointcloud(SimpleModel& obj_file, labutils::VulkanContext cons
     positions.insert(positions.end(), obj_file.dataUntextured.positions.begin(),  obj_file.dataUntextured.positions.end());
 
     //Add color (default to red)
+    colors.resize(positions.size());
     std::fill(colors.begin(), colors.end(), glm::vec3{1.0f, 0.0f, 0.0f});
 
     labutils::Buffer vertexPosGPU = labutils::create_buffer(
@@ -142,7 +143,8 @@ PointCloud obj_to_pointcloud(SimpleModel& obj_file, labutils::VulkanContext cons
 
     return PointCloud {
         std::move(vertexPosGPU),
-        std::move(vertexColGPU)
+        std::move(vertexColGPU),
+        static_cast<uint32_t>(positions.size())
     };
 
 }
