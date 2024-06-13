@@ -19,7 +19,7 @@ endif
 # #############################################
 
 RESCOMP = windres
-INCLUDES += -Ivolk/include -Ivulkan/include -Istb/include -Iglfw/include -IVulkanMemoryAllocator/include -Iglm/include -Irapidobj/include
+INCLUDES += -Ivolk/include -Ivulkan/include -Istb/include -Iglfw/include -IVulkanMemoryAllocator/include -Iglm/include -Irapidobj/include -Iimgui/include
 FORCE_INCLUDE +=
 ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
 ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)

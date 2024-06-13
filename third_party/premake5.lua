@@ -7,6 +7,7 @@ includedirs( "glfw/include" );
 includedirs( "VulkanMemoryAllocator/include" );
 includedirs( "glm/include" );
 includedirs( "rapidobj/include" );
+includedirs ("imgui/include");
 
 defines( "GLM_FORCE_RADIANS=1" )
 defines( "GLM_FORCE_SIZE_T_LENGTH=1" )
@@ -140,5 +141,12 @@ project( "x-rapidobj" )
 	location "."
 
 	files( "rapidobj/include/**.h*" )
+
+project( "x-imgui" )
+	kind "Utility"
+
+	location "."
+
+	files( "imgui/include/**.h*" )
 
 --EOF
