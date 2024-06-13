@@ -143,10 +143,15 @@ project( "x-rapidobj" )
 	files( "rapidobj/include/**.h*" )
 
 project( "x-imgui" )
-	kind "Utility"
+	kind "StaticLib"
 
 	location "."
 
 	files( "imgui/include/**.h*" )
+	files("imgui/include/**.cpp")
+	files( "imgui/backends/imgui_impl_vulkan.h" )
+    files( "imgui/backends/imgui_impl_glfw.h" )
+	files( "imgui/backends/imgui_impl_vulkan.cpp" )
+    files( "imgui/backends/imgui_impl_glfw.cpp" )
 
 --EOF
