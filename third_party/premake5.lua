@@ -11,6 +11,7 @@ includedirs ("imgui/include");
 
 defines( "GLM_FORCE_RADIANS=1" )
 defines( "GLM_FORCE_SIZE_T_LENGTH=1" )
+defines( "IMGUI_IMPL_VULKAN_USE_VOLK" )
 
 filter "system:macosx"
 	-- Additional dependencies required by GLFW on MacOS.
