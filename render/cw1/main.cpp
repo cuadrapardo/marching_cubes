@@ -92,6 +92,15 @@ int main() try
     lut::DescriptorPool imguiDpool = lut::create_imgui_descriptor_pool(window);
 
 
+
+    //Configure GLFW window
+    UserState state{};
+    glfwSetWindowUserPointer(window.window, &state);
+    glfwSetKeyCallback(window.window, &glfw_callback_key_press);
+    glfwSetMouseButtonCallback(window.window, &glfw_callback_button);
+    glfwSetCursorPosCallback(window.window, &glfw_callback_motion);
+
+
     ImGui::CreateContext();
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForVulkan(window.window, true);
@@ -104,6 +113,8 @@ int main() try
     init_info.MinImageCount = window.swapImages.size();
     init_info.ImageCount = window.swapImages.size();
     init_info.UseDynamicRendering = true;
+
+
 
     //dynamic rendering parameters for imgui to use
     init_info.PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
@@ -118,12 +129,6 @@ int main() try
     //TODO:  destroy imgui resources
 
 
-    //Configure GLFW window
-    UserState state{};
-    glfwSetWindowUserPointer(window.window, &state);
-    glfwSetKeyCallback(window.window, &glfw_callback_key_press);
-    glfwSetMouseButtonCallback(window.window, &glfw_callback_button);
-    glfwSetCursorPosCallback(window.window, &glfw_callback_motion);
 
 
 
@@ -228,7 +233,6 @@ int main() try
         // input-driven applications, where redrawing is only needed in
         // reaction to user input (or similar).
         glfwPollEvents(); // or: glfwWaitEvents()
-
 
         // Recreate swap chain
         if( recreateSwapchain )
