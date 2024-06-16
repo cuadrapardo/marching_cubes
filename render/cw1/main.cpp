@@ -79,6 +79,19 @@ namespace
             bool& aNeedToRecreateSwapchain
     );
 
+
+
+
+}
+
+namespace ui {
+    bool vertices, vertex_color, distance_field, grid, edges, edge_color, surface;
+    int grid_resolution;
+
+    const int grid_resolution_min = 1, grid_resolution_max = 100;
+
+    std::string isovalue = "Input Isovalue";
+
 }
 
 
@@ -124,12 +137,8 @@ int main() try
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
     ImGui_ImplVulkan_Init(&init_info);
     ImGui_ImplVulkan_CreateFontsTexture();
-//    ImGui_DestroyFontUploadObjects() ???
 
     //TODO:  destroy imgui resources
-
-
-
 
 
     //Initialise resources
@@ -177,7 +186,6 @@ int main() try
         cbfencesImgui.emplace_back( lut::create_fence( window, VK_FENCE_CREATE_SIGNALED_BIT ) );
     }
     lut::Semaphore imguiImageAvailable = lut::create_semaphore(window);
-    lut::Semaphore imguiRenderFinished = lut::create_semaphore(window);
 
 //Important: keep the image & image views alive during main loop
 
@@ -305,7 +313,19 @@ int main() try
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::ShowDemoWindow();
+        ImGui::Checkbox("View vertices", &ui::vertices);
+        ImGui::Checkbox("View vertex color", &ui::vertex_color);
+        ImGui::Checkbox("View distance field", &ui::distance_field);
+        ImGui::Checkbox("View 3D grid", &ui::grid);
+        ImGui::Checkbox("View edges", &ui::edges);
+        ImGui::Checkbox("View edge color", &ui::edge_color);
+        ImGui::Text("Hausdorff Distance: -");
+        ImGui::SliderInt("Grid Resolution",&ui::grid_resolution, ui::grid_resolution_min, ui::grid_resolution_max);
+        ImGui::InputText("Isovalue", const_cast<char*>(ui::isovalue.c_str()), ui::isovalue.size());
+        if (ImGui::Button("Output to file")) {
+            //TODO: Add output to file function here.
+        }
+
         ImGui::Render();
 
 
