@@ -16,6 +16,7 @@
 
 
 
+void draw_ui(labutils::VulkanWindow const&);
 
 void record_commands_textured( VkCommandBuffer,
                                VkRenderPass,

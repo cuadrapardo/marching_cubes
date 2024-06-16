@@ -44,6 +44,7 @@ namespace labutils
 
     DescriptorPool create_descriptor_pool(VulkanContext const&, std::uint32_t aMaxDescriptors = 2048,
                                           std::uint32_t aMaxSets = 1024);
+    DescriptorPool create_imgui_descriptor_pool(VulkanContext const&);
     VkDescriptorSet alloc_desc_set(VulkanContext const&, VkDescriptorPool, VkDescriptorSetLayout);
 
     ImageView create_image_view_texture2d(VulkanContext const& aContext, VkImage, VkFormat);

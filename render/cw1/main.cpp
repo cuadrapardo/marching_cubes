@@ -28,6 +28,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
 
 
 #include "../labutils/to_string.hpp"
@@ -87,6 +89,35 @@ int main() try
     auto window = std::move(windowInfo.first);
     auto limits = windowInfo.second;
 
+    lut::DescriptorPool imguiDpool = lut::create_imgui_descriptor_pool(window);
+
+
+    ImGui::CreateContext();
+    // Setup Platform/Renderer bindings
+    ImGui_ImplGlfw_InitForVulkan(window.window, true);
+    ImGui_ImplVulkan_InitInfo init_info = {};
+    init_info.Instance = window.instance;
+    init_info.PhysicalDevice = window.physicalDevice;
+    init_info.Device = window.device;
+    init_info.Queue = window.graphicsQueue;
+    init_info.DescriptorPool = imguiDpool.handle;
+    init_info.MinImageCount = window.swapImages.size();
+    init_info.ImageCount = window.swapImages.size();
+    init_info.UseDynamicRendering = true;
+
+    //dynamic rendering parameters for imgui to use
+    init_info.PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
+    init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+    init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &window.swapchainFormat;
+
+    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    ImGui_ImplVulkan_Init(&init_info);
+    ImGui_ImplVulkan_CreateFontsTexture();
+//    ImGui_DestroyFontUploadObjects() ???
+
+    //TODO:  destroy imgui resources
+
+
     //Configure GLFW window
     UserState state{};
     glfwSetWindowUserPointer(window.window, &state);
@@ -95,10 +126,13 @@ int main() try
     glfwSetCursorPosCallback(window.window, &glfw_callback_motion);
 
 
+
+    //Initialise resources
+
+
     // Create VMA allocator
     lut::Allocator allocator = lut::create_allocator(window);
 
-    //Initialise resources
     lut::RenderPass renderPass = create_render_pass(window);
 
     lut::DescriptorSetLayout sceneLayout = create_scene_descriptor_layout(window);
@@ -111,6 +145,8 @@ int main() try
 
     std::vector<lut::Framebuffer> framebuffers;
     create_swapchain_framebuffers( window, renderPass.handle, framebuffers, depthBufferView.handle );
+
+
 
     lut::CommandPool cpool = lut::create_command_pool( window, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT );
 
@@ -126,6 +162,17 @@ int main() try
     lut::Semaphore imageAvailable = lut::create_semaphore( window );
     lut::Semaphore renderFinished = lut::create_semaphore( window );
 
+    //Imgui command buffers
+    std::vector<VkCommandBuffer> cbuffersImgui;
+    std::vector<lut::Fence> cbfencesImgui;
+
+    for( std::size_t i = 0; i < framebuffers.size(); ++i )
+    {
+        cbuffersImgui.emplace_back( lut::alloc_command_buffer( window, cpool.handle ) );
+        cbfencesImgui.emplace_back( lut::create_fence( window, VK_FENCE_CREATE_SIGNALED_BIT ) );
+    }
+    lut::Semaphore imguiImageAvailable = lut::create_semaphore(window);
+    lut::Semaphore imguiRenderFinished = lut::create_semaphore(window);
 
 //Important: keep the image & image views alive during main loop
 
@@ -163,71 +210,6 @@ int main() try
 
     //Load file obj, .tri, todo: point cloud format
     PointCloud pointCloud = load_file(cfg::torusTri, window, allocator);
-
-    // Load obj file
-//    SimpleModel obj = load_simple_wavefront_obj(cfg::sponzaObj);
-
-    //Create textured meshes from the obj
-//    std::vector<TexturedMesh> texturedMeshes = create_textured_meshes(window, allocator, obj);
-    //Create point cloud from the obj
-//    PointCloud pointCloud = obj_to_pointcloud(obj, window, allocator);
-
-    //Load textures into image
-    /* textured meshes
-    std::vector<lut::Image>  meshImages;
-    {
-        lut::CommandPool loadCmdPool = lut::create_command_pool(window, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
-        for(unsigned int mesh = 0; mesh < texturedMeshes.size(); ++mesh) {
-            lut::Image currentTex = lut::load_image_texture2d(texturedMeshes[mesh].diffuseTexturePath.c_str(), window, loadCmdPool.handle, allocator);
-            meshImages.emplace_back(std::move(currentTex));
-        }
-    }
-
-
-        std::vector<lut::ImageView> meshImageViews;
-       //Create image views for textured images
-       for (unsigned int img = 0; img < meshImages.size(); ++img){
-           lut::ImageView aView = lut::create_image_view_texture2d(window, meshImages[img].image, VK_FORMAT_R8G8B8A8_SRGB);
-            meshImageViews.emplace_back(std::move(aView));
-
-       }
-
-
-    //Create default texture sampler
-    bool anisotropicFiltering = lut::anisotropic_filtering(window.physicalDevice);
-    anisotropicFiltering = false; // Anisotropic filtering should be disabled when visualising mipmaps.
-
-       lut::Sampler defaultSampler = lut::create_default_sampler(window, anisotropicFiltering, limits.maxSamplerAnisotropy );
-
-
-       std::vector<VkDescriptorSet> descriptors;
-
-       //allocate and initialise descriptor sets for textures
-       for(unsigned int tex = 0; tex < meshImageViews.size(); ++tex){
-           VkDescriptorSet meshDescriptors = lut::alloc_desc_set( window, dPool.handle,  objectLayout.handle );
-           {
-               VkWriteDescriptorSet desc[1]{};
-
-               VkDescriptorImageInfo textureInfo{};
-               textureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-               textureInfo.imageView = meshImageViews[tex].handle;
-               textureInfo.sampler = defaultSampler.handle;
-
-               desc[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-               desc[0].dstSet = meshDescriptors;
-               desc[0].dstBinding = 0;
-               desc[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-               desc[0].descriptorCount = 1;
-               desc[0].pImageInfo = &textureInfo;
-
-
-               constexpr auto numSets = sizeof(desc)/sizeof(desc[0]);
-               vkUpdateDescriptorSets( window.device, numSets, desc, 0, nullptr );
-           }
-           descriptors.emplace_back(meshDescriptors);
-       }
-       */
-
 
 
     auto previousClock = Clock_::now();
@@ -307,11 +289,21 @@ int main() try
                              "vkAcquireNextImageKHR() returned %s", lut::to_string(acquireRes).c_str());
         }
 
+
         //Update state
         auto const now = Clock_::now();
         auto const dt = std::chrono::duration_cast<Secondsf_>(now-previousClock).count();
         previousClock = now;
         update_user_state( state, dt );
+
+        //New imgui frame
+
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::ShowDemoWindow();
+        ImGui::Render();
+
 
         //Prepare data for this frame
         glsl::SceneUniform sceneUniforms{};
@@ -356,16 +348,129 @@ int main() try
                 imageAvailable.handle,
                 renderFinished.handle
         );
+        // Make sure that the command buffer is no longer in use
+        assert( std::size_t(imageIndex) < cbfencesImgui.size() );
+
+        if( auto const res = vkWaitForFences( window.device, 1,
+                                              &cbfencesImgui[imageIndex].handle, VK_TRUE,
+                                              std::numeric_limits<std::uint64_t>::max() ); VK_SUCCESS != res ){
+            throw lut::Error( "Unable to wait for command buffer fence %u\n"
+                              "vkWaitForFences() returned %s", imageIndex, lut::to_string(res).c_str());
+        }
+
+        if( auto const res = vkResetFences( window.device, 1, &cbfencesImgui[imageIndex].handle ); VK_SUCCESS != res ){
+            throw lut::Error( "Unable to reset command buffer fence %u\n"
+                              "vkResetFences() returned %s", imageIndex, lut::to_string(res).c_str());
+        }
+        //record and submit commands
+        assert(std::size_t(imageIndex) < cbuffersImgui.size());
+        assert(std::size_t(imageIndex) < framebuffers.size());
+
+        //Begin recording commands
+        VkCommandBufferBeginInfo begInfo {};
+        begInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        begInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        begInfo.pInheritanceInfo = nullptr;
+
+        if (auto const res = vkBeginCommandBuffer(cbuffersImgui[imageIndex], &begInfo); VK_SUCCESS != res) {
+            throw labutils::Error("Unable to begin recording command buffer\n"
+                                  "vkBeginCommandBuffer() returned %s", labutils::to_string(res).c_str());
+        }
+
+        //Transition image from present to color optimal
+        labutils::image_barrier(cbuffersImgui[imageIndex],
+                                window.swapImages[imageIndex],
+                                VK_ACCESS_TRANSFER_WRITE_BIT,
+                                VK_ACCESS_TRANSFER_WRITE_BIT,
+                                VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                VkImageSubresourceRange{
+                                        VK_IMAGE_ASPECT_COLOR_BIT,
+                                        0,1,
+                                        0,1}
+        );
+
+        //Draw imgui into swapchain image -----------
+
+        //Get attachment info
+        //Technically just need to recalculate this when window resized
+        VkRenderingAttachmentInfo colorAttachment {};
+        colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        colorAttachment.pNext = nullptr;
+        colorAttachment.imageView = window.swapViews[imageIndex];
+        colorAttachment.imageLayout =  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+        VkRenderingInfo renderInfo;
+        renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        renderInfo.flags = 0;
+        renderInfo.pNext = VK_NULL_HANDLE;
+        renderInfo.renderArea = {VkOffset2D{0,0}, window.swapchainExtent} ;
+        renderInfo.pColorAttachments = &colorAttachment;
+        renderInfo.layerCount = 1;
+        renderInfo.colorAttachmentCount = 1;
+        renderInfo.pDepthAttachment = VK_NULL_HANDLE;
+        renderInfo.pStencilAttachment = VK_NULL_HANDLE;
+        renderInfo.viewMask = 0;
+
+        //Get attachment info
+
+        vkCmdBeginRendering(cbuffersImgui[imageIndex], &renderInfo);
+
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cbuffersImgui[imageIndex]);
+
+        vkCmdEndRendering(cbuffersImgui[imageIndex]);
+        // ----- Draw Imgui
+
+
+        //Set swapchain image to present
+        labutils::image_barrier(cbuffersImgui[imageIndex],
+                                window.swapImages[imageIndex],
+                                VK_ACCESS_TRANSFER_WRITE_BIT,
+                                VK_ACCESS_TRANSFER_WRITE_BIT,
+                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                VkImageSubresourceRange{
+                                        VK_IMAGE_ASPECT_COLOR_BIT,
+                                        0,1,
+                                        0,1}
+        );
+
+        //End command buffer
+        if (auto const res = vkEndCommandBuffer(cbuffersImgui[imageIndex]); VK_SUCCESS != res) {
+            throw labutils::Error("unable to end recording command buffer\n"
+                                  "vkEndCommandBuffer() returned %s", labutils::to_string(res).c_str());
+        }
+
+        //Submit commands
+        submit_commands(
+                window,
+                cbuffersImgui[imageIndex],
+                cbfencesImgui[imageIndex].handle,
+                renderFinished.handle,
+                imguiImageAvailable.handle
+        );
+
 
         present_results(
                 window.presentQueue,
                 window.swapchain,
                 imageIndex,
-                renderFinished.handle,
+                imguiImageAvailable.handle,
                 recreateSwapchain
         );
 
+
+
     }
+
+
 
     // Cleanup takes place automatically in the destructors, but we sill need
     // to ensure that all Vulkan commands have finished before that.

@@ -4,6 +4,31 @@
 
 #include "commands.hpp"
 
+/*
+void draw_ui(VkCommandBuffer imguiCmdBuff, labutils::VulkanWindow const &aWindow, unsigned int imageIndex) {
+    VkRenderingAttachmentInfo colorAttachment {};
+    colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    colorAttachment.pNext = nullptr;
+    colorAttachment.imageView = aWindow.swapViews[imageIndex];
+    colorAttachment.imageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+    VkRenderingInfo renderInfo;
+    renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+    renderInfo.renderArea = { 0,0, aWindow.swapchainExtent} ;
+    renderInfo.pColorAttachments = &colorAttachment;
+    renderInfo.layerCount = 1;
+    renderInfo.colorAttachmentCount = 1;
+
+    vkCmdBeginRendering(imguiCmdBuff, &renderInfo);
+
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+
+    vkCmdEndRendering(imguiCmdBuff);
+
+} */
+
 
 //Record commands for textured data
 void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPass, VkFramebuffer aFramebuffer,

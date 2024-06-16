@@ -16,6 +16,7 @@
 
 
 labutils::RenderPass create_render_pass( labutils::VulkanWindow const& );
+labutils::RenderPass create_imgui_render_pass(labutils::VulkanWindow const&);
 
 
 std::tuple<labutils::Image, labutils::ImageView> create_depth_buffer(labutils::VulkanWindow const&, labutils::Allocator const&);

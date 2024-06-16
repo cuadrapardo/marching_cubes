@@ -137,6 +137,7 @@ namespace labutils
 		auto const supportedLayers = detail::get_instance_layers();
 		auto const supportedExtensions = detail::get_instance_extensions();
 
+
 		bool enableDebugUtils = false;
 
 		std::vector<char const*> enabledLayers, enabledExtensions;
@@ -188,7 +189,7 @@ namespace labutils
 		//Create GLFW window & get VkSurfaceKHR from the window
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        ret.window = glfwCreateWindow(1280,720, "Exercise 3", nullptr, nullptr);
+        ret.window = glfwCreateWindow(1280,720, "Surface Reconstruction", nullptr, nullptr);
         if(!ret.window){
             char const* errMsg = nullptr;
             glfwGetError(&errMsg);
@@ -224,6 +225,8 @@ namespace labutils
 		std::vector<char const*> enabledDevExtensions;
 
         enabledDevExtensions.emplace_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        //Enable dynamic rendering for imgui
+        enabledDevExtensions.emplace_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
 
 		for( auto const& ext : enabledDevExtensions )
 			std::fprintf( stderr, "Enabling device extension: %s\n", ext );
@@ -320,11 +323,16 @@ namespace labutils
         //Destroy old swap chain
         vkDestroySwapchainKHR(aWindow.device, oldSwapchain, nullptr);
 
-        //Get new swuapchain images & create associated image views
+        //Get new swapchain images & create associated image views
+//        ImGui_ImplVulkan_SetMinImageCount(aWindow.swapImages); //TODO: resize imgui when window changes
+//        ImGui_ImplVulkanH_CreateWindow(aWindow.window, aWindow.physicalDevice, aWindow.device, &g_MainWindowData,
+//                                       g_QueueFamily, g_Allocator, g_SwapChainResizeWidth, g_SwapChainResizeHeight, g_MinImageCount);
+//        g_MainWindowData.FrameIndex = 0;
+
         get_swapchain_images(aWindow.device, aWindow.swapchain, aWindow.swapImages);
         create_swapchain_image_views(aWindow.device, aWindow.swapchainFormat, aWindow.swapImages, aWindow.swapViews);
 
-        //Determine which swap chain propertoes have changed and return the information indicating this
+        //Determine which swap chain properties have changed and return the information indicating this
         SwapChanges ret{};
         if(oldExtent.width != aWindow.swapchainExtent.width || oldExtent.height != aWindow.swapchainExtent.height){
             ret.changedSize = true;
@@ -626,6 +634,11 @@ namespace
         std::printf("   -Anisotropic filtering : %s\n", deviceFeatures.samplerAnisotropy ? "true" : "false");
 
 
+        // Dynamic rendering
+        constexpr VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature {
+                .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+                .dynamicRendering = VK_TRUE,
+        };
 
 		VkDeviceCreateInfo deviceInfo{};
 		deviceInfo.sType  = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -637,6 +650,9 @@ namespace
 		deviceInfo.ppEnabledExtensionNames  = aEnabledExtensions.data();
 
 		deviceInfo.pEnabledFeatures         = &deviceFeatures;
+        deviceInfo.pNext = &dynamicRenderingFeature;
+
+
 
 
 		VkDevice device = VK_NULL_HANDLE;
@@ -675,6 +691,11 @@ namespace
         auto const exts = lut::detail::get_device_extensions(aPhysicalDev);
 
         if(!exts.count(VK_KHR_SWAPCHAIN_EXTENSION_NAME)){
+            std::fprintf(stderr, "Infor: Discarding device '%s': extension %s is missing\n", props.deviceName, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+            return  -1.f;
+        }
+        //Check that dynamic rendering is supported
+        if(!exts.count(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)) {
             std::fprintf(stderr, "Infor: Discarding device '%s': extension %s is missing\n", props.deviceName, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
             return  -1.f;
         }

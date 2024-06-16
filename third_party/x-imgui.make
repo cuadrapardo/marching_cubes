@@ -37,7 +37,7 @@ ifeq ($(config),debug_x64)
 TARGETDIR = ../lib
 TARGET = $(TARGETDIR)/libx-imgui-debug-x64-gcc.a
 OBJDIR = ../_build_/debug-x64-gcc/x64/debug/x-imgui
-DEFINES += -D_DEBUG=1 -DGLM_FORCE_RADIANS=1 -DGLM_FORCE_SIZE_T_LENGTH=1
+DEFINES += -D_DEBUG=1 -DGLM_FORCE_RADIANS=1 -DGLM_FORCE_SIZE_T_LENGTH=1 -DIMGUI_IMPL_VULKAN_USE_VOLK
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -g -march=native -Wall -pthread
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -g -std=c++20 -march=native -Wall -pthread
 ALL_LDFLAGS += $(LDFLAGS) -L/usr/lib64 -m64 -pthread
@@ -46,7 +46,7 @@ else ifeq ($(config),release_x64)
 TARGETDIR = ../lib
 TARGET = $(TARGETDIR)/libx-imgui-release-x64-gcc.a
 OBJDIR = ../_build_/release-x64-gcc/x64/release/x-imgui
-DEFINES += -DNDEBUG=1 -DGLM_FORCE_RADIANS=1 -DGLM_FORCE_SIZE_T_LENGTH=1
+DEFINES += -DNDEBUG=1 -DGLM_FORCE_RADIANS=1 -DGLM_FORCE_SIZE_T_LENGTH=1 -DIMGUI_IMPL_VULKAN_USE_VOLK
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -march=native -Wall -pthread
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -std=c++20 -march=native -Wall -pthread
 ALL_LDFLAGS += $(LDFLAGS) -L/usr/lib64 -m64 -s -pthread
@@ -67,18 +67,14 @@ GENERATED += $(OBJDIR)/imgui.o
 GENERATED += $(OBJDIR)/imgui_demo.o
 GENERATED += $(OBJDIR)/imgui_draw.o
 GENERATED += $(OBJDIR)/imgui_impl_glfw.o
-GENERATED += $(OBJDIR)/imgui_impl_glfw1.o
 GENERATED += $(OBJDIR)/imgui_impl_vulkan.o
-GENERATED += $(OBJDIR)/imgui_impl_vulkan1.o
 GENERATED += $(OBJDIR)/imgui_tables.o
 GENERATED += $(OBJDIR)/imgui_widgets.o
 OBJECTS += $(OBJDIR)/imgui.o
 OBJECTS += $(OBJDIR)/imgui_demo.o
 OBJECTS += $(OBJDIR)/imgui_draw.o
 OBJECTS += $(OBJDIR)/imgui_impl_glfw.o
-OBJECTS += $(OBJDIR)/imgui_impl_glfw1.o
 OBJECTS += $(OBJDIR)/imgui_impl_vulkan.o
-OBJECTS += $(OBJDIR)/imgui_impl_vulkan1.o
 OBJECTS += $(OBJDIR)/imgui_tables.o
 OBJECTS += $(OBJDIR)/imgui_widgets.o
 
@@ -144,16 +140,10 @@ endif
 # File Rules
 # #############################################
 
-$(OBJDIR)/imgui_impl_glfw.o: imgui/backends/imgui_impl_glfw.cpp
+$(OBJDIR)/imgui_impl_glfw.o: imgui/include/imgui/backends/imgui_impl_glfw.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/imgui_impl_vulkan.o: imgui/backends/imgui_impl_vulkan.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/imgui_impl_glfw1.o: imgui/include/imgui/backends/imgui_impl_glfw.cpp
-	@echo $(notdir $<)
-	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/imgui_impl_vulkan1.o: imgui/include/imgui/backends/imgui_impl_vulkan.cpp
+$(OBJDIR)/imgui_impl_vulkan.o: imgui/include/imgui/backends/imgui_impl_vulkan.cpp
 	@echo $(notdir $<)
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/imgui.o: imgui/include/imgui/imgui.cpp
