@@ -14,9 +14,8 @@
 #include "to_string.hpp"
 #include "../cw1/point_cloud.hpp"
 
+#include <imgui/backends/imgui_impl_vulkan.h>
 
-
-void draw_ui(labutils::VulkanWindow const&);
 
 void record_commands_textured( VkCommandBuffer,
                                VkRenderPass,
@@ -28,6 +27,14 @@ void record_commands_textured( VkCommandBuffer,
                                VkPipelineLayout,
                                VkDescriptorSet sceneDescriptors,
                                PointCloud& pCloud);
+
+namespace ui {
+    void record_commands_imgui(
+            VkCommandBuffer cbufferImgui,
+            labutils::VulkanWindow const& ,
+            unsigned int const& imageIndex
+    );
+}
 
 void submit_commands(
         labutils::VulkanWindow const&,

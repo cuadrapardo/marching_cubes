@@ -31,12 +31,7 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_vulkan.h>
 
-
-#include "../labutils/to_string.hpp"
-#include "../labutils/vulkan_window.hpp"
-
-#include "../labutils/angle.hpp"
-using namespace labutils::literals;
+//using namespace labutils::literals;
 
 
 #include "../labutils/error.hpp"
@@ -51,6 +46,10 @@ using namespace labutils::literals;
 #include "../labutils/render_constants.hpp"
 #include "../labutils/descriptor.hpp"
 #include "../labutils/commands.hpp"
+#include "../labutils/to_string.hpp"
+#include "../labutils/vulkan_window.hpp"
+#include "../labutils/angle.hpp"
+#include "../labutils/ui.hpp"
 
 namespace lut = labutils;
 
@@ -79,20 +78,17 @@ namespace
             bool& aNeedToRecreateSwapchain
     );
 
-
-
-
 }
 
 namespace ui {
-    bool vertices, vertex_color, distance_field, grid, edges, edge_color, surface;
-    int grid_resolution;
+    bool vertices = false, vertex_color = false, distance_field = false, grid = false, edges = false, edge_color = false, surface = false;
+    int grid_resolution = 1;
 
     const int grid_resolution_min = 1, grid_resolution_max = 100;
 
     std::string isovalue = "Input Isovalue";
-
 }
+
 
 
 int main() try
@@ -105,7 +101,6 @@ int main() try
     lut::DescriptorPool imguiDpool = lut::create_imgui_descriptor_pool(window);
 
 
-
     //Configure GLFW window
     UserState state{};
     glfwSetWindowUserPointer(window.window, &state);
@@ -113,28 +108,10 @@ int main() try
     glfwSetMouseButtonCallback(window.window, &glfw_callback_button);
     glfwSetCursorPosCallback(window.window, &glfw_callback_motion);
 
-
     ImGui::CreateContext();
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForVulkan(window.window, true);
-    ImGui_ImplVulkan_InitInfo init_info = {};
-    init_info.Instance = window.instance;
-    init_info.PhysicalDevice = window.physicalDevice;
-    init_info.Device = window.device;
-    init_info.Queue = window.graphicsQueue;
-    init_info.DescriptorPool = imguiDpool.handle;
-    init_info.MinImageCount = window.swapImages.size();
-    init_info.ImageCount = window.swapImages.size();
-    init_info.UseDynamicRendering = true;
-
-
-
-    //dynamic rendering parameters for imgui to use
-    init_info.PipelineRenderingCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
-    init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-    init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &window.swapchainFormat;
-
-    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    ImGui_ImplVulkan_InitInfo init_info = ui::setup_imgui(window, imguiDpool);
     ImGui_ImplVulkan_Init(&init_info);
     ImGui_ImplVulkan_CreateFontsTexture();
 
@@ -142,15 +119,12 @@ int main() try
 
 
     //Initialise resources
-
-
     // Create VMA allocator
     lut::Allocator allocator = lut::create_allocator(window);
 
     lut::RenderPass renderPass = create_render_pass(window);
 
     lut::DescriptorSetLayout sceneLayout = create_scene_descriptor_layout(window);
-//    lut::DescriptorSetLayout objectLayout = create_object_descriptor_layout(window);
 
     lut::PipelineLayout pipeLayout = create_pipeline_layout(window, sceneLayout.handle);
     lut::Pipeline pipe = create_pipeline(window, renderPass.handle, pipeLayout.handle);
@@ -308,7 +282,7 @@ int main() try
         previousClock = now;
         update_user_state( state, dt );
 
-        //New imgui frame
+        //Imgui Layout
 
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -325,9 +299,11 @@ int main() try
         if (ImGui::Button("Output to file")) {
             //TODO: Add output to file function here.
         }
+        if (ImGui::Button("Recalculate surface")) {
+            //TODO: Add marching cubes function with updated parameters here
+        }
 
         ImGui::Render();
-
 
         //Prepare data for this frame
         glsl::SceneUniform sceneUniforms{};
@@ -372,6 +348,8 @@ int main() try
                 imageAvailable.handle,
                 renderFinished.handle
         );
+
+
         // Make sure that the command buffer is no longer in use
         assert( std::size_t(imageIndex) < cbfencesImgui.size() );
 
@@ -386,91 +364,10 @@ int main() try
             throw lut::Error( "Unable to reset command buffer fence %u\n"
                               "vkResetFences() returned %s", imageIndex, lut::to_string(res).c_str());
         }
-        //record and submit commands
         assert(std::size_t(imageIndex) < cbuffersImgui.size());
         assert(std::size_t(imageIndex) < framebuffers.size());
 
-        //Begin recording commands
-        VkCommandBufferBeginInfo begInfo {};
-        begInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        begInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        begInfo.pInheritanceInfo = nullptr;
-
-        if (auto const res = vkBeginCommandBuffer(cbuffersImgui[imageIndex], &begInfo); VK_SUCCESS != res) {
-            throw labutils::Error("Unable to begin recording command buffer\n"
-                                  "vkBeginCommandBuffer() returned %s", labutils::to_string(res).c_str());
-        }
-
-        //Transition image from present to color optimal
-        labutils::image_barrier(cbuffersImgui[imageIndex],
-                                window.swapImages[imageIndex],
-                                VK_ACCESS_TRANSFER_WRITE_BIT,
-                                VK_ACCESS_TRANSFER_WRITE_BIT,
-                                VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                VkImageSubresourceRange{
-                                        VK_IMAGE_ASPECT_COLOR_BIT,
-                                        0,1,
-                                        0,1}
-        );
-
-        //Draw imgui into swapchain image -----------
-
-        //Get attachment info
-        //Technically just need to recalculate this when window resized
-        VkRenderingAttachmentInfo colorAttachment {};
-        colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        colorAttachment.pNext = nullptr;
-        colorAttachment.imageView = window.swapViews[imageIndex];
-        colorAttachment.imageLayout =  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        colorAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-
-        VkRenderingInfo renderInfo;
-        renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-        renderInfo.flags = 0;
-        renderInfo.pNext = VK_NULL_HANDLE;
-        renderInfo.renderArea = {VkOffset2D{0,0}, window.swapchainExtent} ;
-        renderInfo.pColorAttachments = &colorAttachment;
-        renderInfo.layerCount = 1;
-        renderInfo.colorAttachmentCount = 1;
-        renderInfo.pDepthAttachment = VK_NULL_HANDLE;
-        renderInfo.pStencilAttachment = VK_NULL_HANDLE;
-        renderInfo.viewMask = 0;
-
-        //Get attachment info
-
-        vkCmdBeginRendering(cbuffersImgui[imageIndex], &renderInfo);
-
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cbuffersImgui[imageIndex]);
-
-        vkCmdEndRendering(cbuffersImgui[imageIndex]);
-        // ----- Draw Imgui
-
-
-        //Set swapchain image to present
-        labutils::image_barrier(cbuffersImgui[imageIndex],
-                                window.swapImages[imageIndex],
-                                VK_ACCESS_TRANSFER_WRITE_BIT,
-                                VK_ACCESS_TRANSFER_WRITE_BIT,
-                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                VkImageSubresourceRange{
-                                        VK_IMAGE_ASPECT_COLOR_BIT,
-                                        0,1,
-                                        0,1}
-        );
-
-        //End command buffer
-        if (auto const res = vkEndCommandBuffer(cbuffersImgui[imageIndex]); VK_SUCCESS != res) {
-            throw labutils::Error("unable to end recording command buffer\n"
-                                  "vkEndCommandBuffer() returned %s", labutils::to_string(res).c_str());
-        }
+       ui::record_commands_imgui(cbuffersImgui[imageIndex], window, imageIndex);
 
         //Submit commands
         submit_commands(

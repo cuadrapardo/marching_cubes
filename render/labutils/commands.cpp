@@ -4,30 +4,7 @@
 
 #include "commands.hpp"
 
-/*
-void draw_ui(VkCommandBuffer imguiCmdBuff, labutils::VulkanWindow const &aWindow, unsigned int imageIndex) {
-    VkRenderingAttachmentInfo colorAttachment {};
-    colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    colorAttachment.pNext = nullptr;
-    colorAttachment.imageView = aWindow.swapViews[imageIndex];
-    colorAttachment.imageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; //
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
-    VkRenderingInfo renderInfo;
-    renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-    renderInfo.renderArea = { 0,0, aWindow.swapchainExtent} ;
-    renderInfo.pColorAttachments = &colorAttachment;
-    renderInfo.layerCount = 1;
-    renderInfo.colorAttachmentCount = 1;
-
-    vkCmdBeginRendering(imguiCmdBuff, &renderInfo);
-
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
-
-    vkCmdEndRendering(imguiCmdBuff);
-
-} */
 
 
 //Record commands for textured data
@@ -129,6 +106,93 @@ void submit_commands(labutils::VulkanWindow const &aWindow, VkCommandBuffer aCmd
         throw labutils::Error("Unable to submit command buffer to queue\n"
                          "vkQueueSubmit() returned %s", labutils::to_string(res).c_str());
     }
+}
+
+namespace ui {
+    void record_commands_imgui(VkCommandBuffer cbufferImgui, labutils::VulkanWindow const& window, unsigned int const& imageIndex) {
+        //Begin recording commands
+        VkCommandBufferBeginInfo begInfo {};
+        begInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        begInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        begInfo.pInheritanceInfo = nullptr;
+
+        if (auto const res = vkBeginCommandBuffer(cbufferImgui, &begInfo); VK_SUCCESS != res) {
+            throw labutils::Error("Unable to begin recording command buffer\n"
+                                  "vkBeginCommandBuffer() returned %s", labutils::to_string(res).c_str());
+        }
+
+        //Transition image from present to color optimal
+        labutils::image_barrier(cbufferImgui,
+                                window.swapImages[imageIndex],
+                                VK_ACCESS_TRANSFER_WRITE_BIT,
+                                VK_ACCESS_TRANSFER_WRITE_BIT,
+                                VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                VkImageSubresourceRange{
+                                        VK_IMAGE_ASPECT_COLOR_BIT,
+                                        0,1,
+                                        0,1}
+        );
+
+        //Draw imgui into swapchain image -----------
+
+        //Get attachment info
+        //Technically just need to recalculate this when window resized
+        VkRenderingAttachmentInfo colorAttachment {};
+        colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        colorAttachment.pNext = nullptr;
+        colorAttachment.imageView = window.swapViews[imageIndex];
+        colorAttachment.imageLayout =  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+        VkRenderingInfo renderInfo;
+        renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        renderInfo.flags = 0;
+        renderInfo.pNext = VK_NULL_HANDLE;
+        renderInfo.renderArea = {VkOffset2D{0,0}, window.swapchainExtent} ;
+        renderInfo.pColorAttachments = &colorAttachment;
+        renderInfo.layerCount = 1;
+        renderInfo.colorAttachmentCount = 1;
+        renderInfo.pDepthAttachment = VK_NULL_HANDLE;
+        renderInfo.pStencilAttachment = VK_NULL_HANDLE;
+        renderInfo.viewMask = 0;
+
+        //Get attachment info
+
+        vkCmdBeginRendering(cbufferImgui, &renderInfo);
+
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cbufferImgui);
+
+        vkCmdEndRendering(cbufferImgui);
+        // ----- Draw Imgui
+
+
+        //Set swapchain image to present
+        labutils::image_barrier(cbufferImgui,
+                                window.swapImages[imageIndex],
+                                VK_ACCESS_TRANSFER_WRITE_BIT,
+                                VK_ACCESS_TRANSFER_WRITE_BIT,
+                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                VkImageSubresourceRange{
+                                        VK_IMAGE_ASPECT_COLOR_BIT,
+                                        0,1,
+                                        0,1}
+        );
+
+        //End command buffer
+        if (auto const res = vkEndCommandBuffer(cbufferImgui); VK_SUCCESS != res) {
+            throw labutils::Error("unable to end recording command buffer\n"
+                                  "vkEndCommandBuffer() returned %s", labutils::to_string(res).c_str());
+        }
+    }
+
 }
 
 
