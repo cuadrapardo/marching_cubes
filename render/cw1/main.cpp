@@ -56,6 +56,7 @@ namespace lut = labutils;
 #include "simple_model.hpp"
 #include "load_model.hpp"
 #include "point_cloud.hpp"
+#include "../../marching_cubes/distance_field.hpp"
 
 
 namespace
@@ -114,8 +115,6 @@ int main() try
     ImGui_ImplVulkan_InitInfo init_info = ui::setup_imgui(window, imguiDpool);
     ImGui_ImplVulkan_Init(&init_info);
     ImGui_ImplVulkan_CreateFontsTexture();
-
-    //TODO:  destroy imgui resources
 
 
     //Initialise resources
@@ -197,6 +196,13 @@ int main() try
 
     //Load file obj, .tri, todo: point cloud format
     PointCloud pointCloud = load_file(cfg::torusTri, window, allocator);
+
+    //TODO: remove this. This is redundant copies
+    std::vector<glm::vec3> grid_pos = create_regular_grid(1, pointCloud.positions);
+    std::vector<float> grid_scalar;
+    //= calculate_distance_field(grid_pos);
+
+    DistanceField distanceField = create_distance_field(grid_pos, grid_scalar, window, allocator);
 
 
     auto previousClock = Clock_::now();
@@ -338,7 +344,8 @@ int main() try
                                           sceneUniforms,
                                           pipeLayout.handle,
                                           sceneDescriptors,
-                                          pointCloud
+                                          pointCloud,
+                                          distanceField
                                           );
 
         submit_commands(
@@ -390,6 +397,8 @@ int main() try
 
 
     }
+
+    //TODO:  destroy imgui resources
 
 
 

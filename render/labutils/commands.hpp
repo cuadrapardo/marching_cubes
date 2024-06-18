@@ -12,6 +12,7 @@
 #include "vulkan_window.hpp"
 #include "vkutil.hpp"
 #include "to_string.hpp"
+#include "../../marching_cubes/distance_field.hpp"
 #include "../cw1/point_cloud.hpp"
 
 #include <imgui/backends/imgui_impl_vulkan.h>
@@ -26,7 +27,8 @@ void record_commands_textured( VkCommandBuffer,
                                glsl::SceneUniform const&,
                                VkPipelineLayout,
                                VkDescriptorSet sceneDescriptors,
-                               PointCloud& pCloud);
+                               PointCloud& pCloud,
+                               DistanceField& dField);
 
 namespace ui {
     void record_commands_imgui(

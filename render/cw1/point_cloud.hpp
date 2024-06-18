@@ -8,11 +8,12 @@
 #include <unordered_set>
 #include "simple_model.hpp"
 
-
+//TODO: add vertex attribute for size (dependant on scalar value)
 struct PointCloud {
-    labutils::Buffer positions;
+    labutils::Buffer positions_buffer;
     labutils::Buffer colors;
 
+    std::vector<glm::vec3> positions;
     std::uint32_t vertex_count;
 };
 
