@@ -38,11 +38,9 @@ std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vect
 
 
 
-    //ISSUE: GRID IS TOO SMALL- there are pieces of the point cloud not in it.
-    // Check - manually check extents against values calculated
-    for (unsigned int i = 0; i < grid_boxes.x ; i++) {
-        for(unsigned int j = 0; j < grid_boxes.y ; j++) {
-            for(unsigned int k = 0; k < grid_boxes.z ; k++) {
+    for (unsigned int i = 0; i <= grid_boxes.x + 1 ; i++) {
+        for(unsigned int j = 0; j <= grid_boxes.y + 1; j++) {
+            for(unsigned int k = 0; k <= grid_boxes.z + 1; k++) {
                 grid_positions.emplace_back(
                             min.x + (i * scale),
                             min.y + (j * scale),
