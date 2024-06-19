@@ -10,7 +10,8 @@
 
 constexpr char const* WHITE_MAT = "assets/cw1/textures/white.jpg";
 
-PointCloud load_file(char const* aPath, labutils::VulkanContext const& window, labutils::Allocator const& allocator);
+//Loads file (.obj, .tri) and returns a vector of the vertex positions
+std::vector<glm::vec3> load_file(char const* aPath, labutils::VulkanContext const& window, labutils::Allocator const& allocator);
 
 // Load a Wavefront OBJ model
 SimpleModel load_simple_wavefront_obj( char const* aPath );

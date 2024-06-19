@@ -198,7 +198,7 @@ std::vector<glm::vec3> load_triangle_soup(char const* aPath) {
 }
 
 
-PointCloud load_file(char const* aPath, labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
+std::vector<glm::vec3> load_file(char const* aPath, labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
     std::filesystem::path p(aPath);
     std::cout << "Selected file: " << p.filename() << std::endl;
     std::vector<glm::vec3> positions;
@@ -215,7 +215,7 @@ PointCloud load_file(char const* aPath, labutils::VulkanContext const& window, l
 
     //TODO: add point cloud file support
 
-    return(create_pointcloud(positions, window, allocator ));
+    return(positions);
 }
 
 

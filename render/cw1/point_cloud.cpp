@@ -10,14 +10,13 @@
 #include <algorithm>
 #include <cstring>
 
-PointCloud create_pointcloud(std::vector<glm::vec3> positions, labutils::VulkanContext const& window, labutils::Allocator const& allocator ) {
-    std::uint32_t positions_size = sizeof(positions[0]) * (positions.size());
-    std::uint32_t color_size = positions_size;
+//Creates position, color, scale buffers to render points
+PointBuffer create_pointcloud_buffers(std::vector<glm::vec3> positions, std::vector<glm::vec3> colors, std::vector<float> scalar,
+        labutils::VulkanContext const& window, labutils::Allocator const& allocator ) {
 
-    //Add color (default to red) - might not be necessary.
-    std::vector<glm::vec3> colors;
-    colors.resize(positions.size());
-    std::fill(colors.begin(), colors.end(), glm::vec3{1.0f, 0.0f, 0.0f});
+    std::uint32_t positions_size = sizeof(positions[0]) * (positions.size());
+    std::uint32_t color_size = sizeof(colors[0]) * (colors.size());
+    std::uint32_t scalar_size = sizeof(scalar[0]) * scalar.size();
 
     labutils::Buffer vertexPosGPU = labutils::create_buffer(
             allocator,
@@ -34,6 +33,15 @@ PointCloud create_pointcloud(std::vector<glm::vec3> positions, labutils::VulkanC
                                                             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
     );
 
+
+    labutils::Buffer vertexScalarGPU = labutils::create_buffer(allocator,
+                                                               scalar_size,
+                                                               VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                                               0,
+                                                               VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
+    );
+
+
     labutils::Buffer posStaging = labutils::create_buffer(allocator,
                                                           positions_size,
                                                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -43,6 +51,12 @@ PointCloud create_pointcloud(std::vector<glm::vec3> positions, labutils::VulkanC
                                                           color_size,
                                                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                           VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
+    labutils::Buffer scalarStaging = labutils::create_buffer(allocator,
+                                                             scalar_size,
+                                                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
 
     void *posPtr = nullptr;
     if (auto const res = vmaMapMemory(allocator.allocator, posStaging.allocation, &posPtr); VK_SUCCESS !=
@@ -60,6 +74,15 @@ PointCloud create_pointcloud(std::vector<glm::vec3> positions, labutils::VulkanC
     }
     std::memcpy(colPtr, colors.data() , color_size);
     vmaUnmapMemory(allocator.allocator, colStaging.allocation);
+
+    void* scalarPtr = nullptr;
+    if(auto const res = vmaMapMemory(allocator.allocator, scalarStaging.allocation, &scalarPtr); VK_SUCCESS != res){
+        throw labutils::Error("Mapping memory for writing\n"
+                              "vmaMapMemory() returned %s", labutils::to_string(res).c_str());
+    }
+    std::memcpy(scalarPtr, scalar.data() , scalar_size);
+    vmaUnmapMemory(allocator.allocator, scalarStaging.allocation);
+
 
     //We need to ensure that the Vulkan resources are alive until all the transfers have completed. For simplicity,
     //we will just wait for the operations to complete with a fence. A more complex solution might want to queue
@@ -106,6 +129,20 @@ PointCloud create_pointcloud(std::vector<glm::vec3> positions, labutils::VulkanC
                              VK_PIPELINE_STAGE_TRANSFER_BIT,
                              VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
     );
+
+    VkBufferCopy scopy{};
+    scopy.size = scalar_size;
+
+    vkCmdCopyBuffer(uploadCmd, scalarStaging.buffer, vertexScalarGPU.buffer, 1, &scopy);
+
+    labutils::buffer_barrier(uploadCmd,
+                             vertexScalarGPU.buffer,
+                             VK_ACCESS_TRANSFER_WRITE_BIT,
+                             VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
+    );
+
     if(auto const res = vkEndCommandBuffer(uploadCmd);VK_SUCCESS != res) {
         throw labutils::Error("Ending command buffer recording\n"
                               "vkEndCommandBUffer() returned %s", labutils::to_string(res).c_str());
@@ -137,13 +174,22 @@ PointCloud create_pointcloud(std::vector<glm::vec3> positions, labutils::VulkanC
                               "vkWaitForFences() returned %s", labutils::to_string(res).c_str());
     }
 
-    return PointCloud {
+    return PointBuffer {
             std::move(vertexPosGPU),
             std::move(vertexColGPU),
-            positions,
+            std::move(vertexScalarGPU),
             static_cast<uint32_t>(positions.size())
     };
 
+}
 
+void PointCloud::set_color(const glm::vec3& color) {
+    colors.resize(positions.size());
+    std::fill(colors.begin(), colors.end(), color);
+}
+
+void PointCloud::set_size(const unsigned int& size) {
+    point_size.resize(positions.size());
+    std::fill(point_size.begin(), point_size.end(), size);
 }
 

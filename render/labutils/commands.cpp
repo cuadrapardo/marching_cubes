@@ -11,7 +11,7 @@
 void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPass, VkFramebuffer aFramebuffer,
                                VkPipeline aGraphicsPipe, VkExtent2D const& aImageExtent, VkBuffer aSceneUBO,
                                glsl::SceneUniform const& aSceneUniform,  VkPipelineLayout aGraphicsLayout,
-                               VkDescriptorSet aSceneDescriptors, PointCloud& pCloud, DistanceField& dField) {
+                               VkDescriptorSet aSceneDescriptors, std::vector<PointBuffer*> const& points) {
     //Begin recording commands
     VkCommandBufferBeginInfo begInfo {};
     begInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -68,25 +68,18 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
     vkCmdBindDescriptorSets(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aGraphicsLayout, 0, 1,
                             &aSceneDescriptors, 0, nullptr);
 
-    //Bind vertex buffers
-//    VkBuffer buffers[2] {pCloud.positions.buffer, pCloud.colors.buffer};
-//    VkDeviceSize offsets[2]{};
+    for(unsigned int p = 0; p < points.size(); p++){
+        VkBuffer buffers[3] {points[p]->positions.buffer,
+                                  points[p]->color.buffer,
+                                  points[p]->scale.buffer };
+        VkDeviceSize offsets[3]{};
+
+        vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
+
+        vkCmdDraw(aCmdBuff, points[p]->vertex_count, 1, 0, 0);
 
 
-//    vkCmdBindVertexBuffers(aCmdBuff, 0, 2, buffers, offsets);
-
-//    vkCmdDraw(aCmdBuff, pCloud.vertex_count, 1, 0, 0);
-
-    //TODO: is there a nicer way of doing this?
-    VkBuffer grid_buffers[3] {dField.grid_positions_buffer.buffer,
-                              dField.grid_color_buffer.buffer,
-                              dField.grid_scalar_value_buffer.buffer };
-    VkDeviceSize grid_offsets[3]{};
-
-    vkCmdBindVertexBuffers(aCmdBuff, 0, 2, grid_buffers, grid_offsets);
-
-    vkCmdDraw(aCmdBuff, dField.vertex_count, 1, 0, 0);
-
+    }
 
     //End the render pass
     vkCmdEndRenderPass(aCmdBuff);

@@ -227,7 +227,7 @@ labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRend
     stages[1].pName = "main";
 
     //Position
-    VkVertexInputBindingDescription vertexInputs[2]{};
+    VkVertexInputBindingDescription vertexInputs[3]{};
     vertexInputs[0].binding = 0;
     vertexInputs[0].stride = sizeof(float) * 3;
     vertexInputs[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -237,8 +237,13 @@ labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRend
     vertexInputs[1].stride = sizeof(float) * 3;
     vertexInputs[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
+    //Scalar value
+    vertexInputs[2].binding = 2;
+    vertexInputs[2].stride = sizeof(float);
+    vertexInputs[2].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    VkVertexInputAttributeDescription vertexAttributes[2]{};
+
+    VkVertexInputAttributeDescription vertexAttributes[3]{};
     vertexAttributes[0].binding = 0; //must match binding above
     vertexAttributes[0].location = 0; //must match shader
     vertexAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -249,12 +254,17 @@ labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRend
     vertexAttributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
     vertexAttributes[1].offset = 0;
 
+    vertexAttributes[2].binding = 2; // must match binding above
+    vertexAttributes[2].location = 2; //ditto
+    vertexAttributes[2].format = VK_FORMAT_R32_SFLOAT; //Technically does not need to be signed
+    vertexAttributes[2].offset = 0;
+
     //Vertex input state
     VkPipelineVertexInputStateCreateInfo inputInfo{};
     inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    inputInfo.vertexBindingDescriptionCount = 2; //number of vertexInputs above
+    inputInfo.vertexBindingDescriptionCount = 3; //number of vertexInputs above
     inputInfo.pVertexBindingDescriptions = vertexInputs;
-    inputInfo.vertexAttributeDescriptionCount = 2; //number of vertexAttributes above
+    inputInfo.vertexAttributeDescriptionCount = 3; //number of vertexAttributes above
     inputInfo.pVertexAttributeDescriptions = vertexAttributes;
 
     //Input Assembly State

@@ -84,9 +84,10 @@ namespace
 namespace ui {
     bool vertices = false, vertex_color = false, distance_field = false, grid = false, edges = false, edge_color = false, surface = false;
     int grid_resolution = 1;
-
     const int grid_resolution_min = 1, grid_resolution_max = 100;
 
+    int point_cloud_size = 1;
+    const int p_cloud_size_min = 1, p_cloud_size_max = 10;
     std::string isovalue = "Input Isovalue";
 }
 
@@ -195,14 +196,25 @@ int main() try
     }
 
     //Load file obj, .tri, todo: point cloud format
-    PointCloud pointCloud = load_file(cfg::torusTri, window, allocator);
+    PointCloud pointCloud;
+    pointCloud.positions = load_file(cfg::torusTri, window, allocator);
+    pointCloud.set_color(glm::vec3(1.0f, 0, 0));
+    pointCloud.set_size(5);
 
-    //TODO: remove this. This is redundant copies
-    std::vector<glm::vec3> grid_pos = create_regular_grid(1, pointCloud.positions);
-    std::vector<float> grid_scalar;
-    //= calculate_distance_field(grid_pos);
+    PointCloud distanceField;
+    distanceField.positions = create_regular_grid(1, pointCloud.positions);
+    distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
+    distanceField.set_color(glm::vec3(0,0,1.0f)); //TODO: color depending on vertex value wrt isovalue
+    distanceField.set_size(1);
+    //Create buffers for rendering
+    PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
+                                                             window, allocator);
+    PointBuffer gridBuffer = create_pointcloud_buffers(distanceField.positions, distanceField.colors, distanceField.point_size,
+                                                       window, allocator);
 
-    DistanceField distanceField = create_distance_field(grid_pos, grid_scalar, window, allocator);
+    std::vector<PointBuffer*> pBuffer;
+    pBuffer.push_back(&pointCloudBuffer);
+    pBuffer.push_back(&gridBuffer);
 
 
     auto previousClock = Clock_::now();
@@ -294,6 +306,7 @@ int main() try
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGui::Checkbox("View vertices", &ui::vertices);
+        ImGui::SliderInt("Point cloud point size",&ui::point_cloud_size, ui::p_cloud_size_min, ui::p_cloud_size_max);
         ImGui::Checkbox("View vertex color", &ui::vertex_color);
         ImGui::Checkbox("View distance field", &ui::distance_field);
         ImGui::Checkbox("View 3D grid", &ui::grid);
@@ -344,8 +357,7 @@ int main() try
                                           sceneUniforms,
                                           pipeLayout.handle,
                                           sceneDescriptors,
-                                          pointCloud,
-                                          distanceField
+                                          pBuffer
                                           );
 
         submit_commands(

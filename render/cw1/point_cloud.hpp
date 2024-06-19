@@ -8,16 +8,24 @@
 #include <unordered_set>
 #include "simple_model.hpp"
 
-//TODO: add vertex attribute for size (dependant on scalar value)
 struct PointCloud {
-    labutils::Buffer positions_buffer;
-    labutils::Buffer colors;
-
     std::vector<glm::vec3> positions;
+    std::vector<glm::vec3> colors;
+    std::vector<float> point_size;
+
+    void set_color(glm::vec3 const& color);
+    void set_size(unsigned int const& size);
+};
+
+struct PointBuffer {
+    labutils::Buffer positions;
+    labutils::Buffer color;
+    labutils::Buffer scale;
     std::uint32_t vertex_count;
 };
 
 
-PointCloud create_pointcloud(std::vector<glm::vec3> positions, labutils::VulkanContext const& window, labutils::Allocator const& allocator );
+PointBuffer create_pointcloud_buffers(std::vector<glm::vec3> positions, std::vector<glm::vec3> color, std::vector<float> scale,
+                             labutils::VulkanContext const& window, labutils::Allocator const& allocator);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_POINT_CLOUD_HPP
