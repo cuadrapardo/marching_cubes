@@ -38,6 +38,8 @@ std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vect
 
 
 
+    //ISSUE: GRID IS TOO SMALL- there are pieces of the point cloud not in it.
+    // Check - manually check extents against values calculated
     for (unsigned int i = 0; i < grid_boxes.x ; i++) {
         for(unsigned int j = 0; j < grid_boxes.y ; j++) {
             for(unsigned int k = 0; k < grid_boxes.z ; k++) {
@@ -180,10 +182,6 @@ DistanceField create_distance_field(std::vector<glm::vec3> const& grid_positions
                              VK_PIPELINE_STAGE_TRANSFER_BIT,
                              VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
     );
-    if(auto const res = vkEndCommandBuffer(uploadCmd);VK_SUCCESS != res) {
-        throw labutils::Error("Ending command buffer recording\n"
-                              "vkEndCommandBUffer() returned %s", labutils::to_string(res).c_str());
-    }
 
     VkBufferCopy scopy{};
     scopy.size = scalar_size;
