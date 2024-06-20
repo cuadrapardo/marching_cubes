@@ -199,13 +199,14 @@ int main() try
     PointCloud pointCloud;
     pointCloud.positions = load_file(cfg::torusTri, window, allocator);
     pointCloud.set_color(glm::vec3(1.0f, 0, 0));
-    pointCloud.set_size(5);
+    pointCloud.set_size(2);
 
     PointCloud distanceField;
     distanceField.positions = create_regular_grid(1, pointCloud.positions);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     distanceField.set_color(glm::vec3(0,0,1.0f)); //TODO: color depending on vertex value wrt isovalue
-    distanceField.set_size(1);
+//    distanceField.set_size(1);
+
     //Create buffers for rendering
     PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
                                                              window, allocator);

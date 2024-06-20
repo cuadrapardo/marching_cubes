@@ -63,6 +63,7 @@ std::vector<float> calculate_distance_field(std::vector<glm::vec3> const& grid_v
             float d = glm::distance(grid_vertex, pcloud_vertex);
             distance = (d < distance) ? d : distance;
         }
+        grid_scalar_value.push_back(distance);
     }
     return grid_scalar_value;
 }
