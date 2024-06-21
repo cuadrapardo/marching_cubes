@@ -14,9 +14,10 @@
 
 
 // Create regular grid in the space of the point cloud
-std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vector<glm::vec3> const& point_cloud);
+std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vector<glm::vec3> const& point_cloud, std::vector<uint32_t>& );
 
-std::vector<float> calculate_distance_field(std::vector<glm::vec3> const& grid_vertices, std::vector<glm::vec3> const& point_cloud);
+// Indexes grid edges as a pair of vertices in the grid
+std::vector<std::pair<unsigned int, unsigned int>> index_grid_edges(std::vector<glm::vec3> const& grid_vertices);
 
 // Find scalar value for each point in the grid
 std::vector<float> calculate_distance_field(std::vector<glm::vec3> const& grid_vertices, std::vector<glm::vec3> const& point_cloud_vertices);

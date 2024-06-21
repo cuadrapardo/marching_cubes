@@ -10,7 +10,7 @@
 #include <cstring>
 
 
-std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vector<glm::vec3> const& point_cloud) {
+std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vector<glm::vec3> const& point_cloud, std::vector<uint32_t>& grid_edges) {
     std::vector<glm::vec3> grid_positions;
     //Determine size of point cloud (bounding box)
     glm::vec3 min = {std::numeric_limits<float>::max(),std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
@@ -36,6 +36,10 @@ std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vect
             extents.z / scale,
     };
 
+    auto get_index = [grid_boxes](unsigned int i, unsigned int j, unsigned int k) -> unsigned int {
+        return i * (grid_boxes.y + 2) * (grid_boxes.z + 2) + j * (grid_boxes.z + 2) + k;
+    }; // note this will only work in a loop structured like the one below
+
     for (unsigned int i = 0; i <= grid_boxes.x + 1 ; i++) {
         for(unsigned int j = 0; j <= grid_boxes.y + 1; j++) {
             for(unsigned int k = 0; k <= grid_boxes.z + 1; k++) {
@@ -44,6 +48,22 @@ std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vect
                             min.y + (j * scale),
                             min.z + (k * scale)
                         );
+
+                // Add edges
+                if (i < grid_boxes.x + 1) {
+                    grid_edges.emplace_back(get_index(i, j, k));
+                    grid_edges.emplace_back(get_index(i + 1, j, k));
+                }
+                if (j < grid_boxes.y + 1) {
+                    grid_edges.emplace_back(get_index(i, j, k));
+                    grid_edges.emplace_back(get_index(i, j + 1, k));
+                }
+                if (k < grid_boxes.z + 1) {
+                    grid_edges.emplace_back(get_index(i, j, k));
+                    grid_edges.emplace_back(get_index(i, j + 1, k));
+                }
+
+
 
             }
         }

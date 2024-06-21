@@ -195,6 +195,154 @@ labutils::PipelineLayout create_pipeline_layout(labutils::VulkanContext const &a
     return labutils::PipelineLayout(aContext.device, layout);
 }
 
+labutils::Pipeline create_line_pipeline(labutils::VulkanWindow const &aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout) {
+    //Load shader modules
+    labutils::ShaderModule vert = labutils::load_shader_module(aWindow, cfg::kVertShaderPath);
+    labutils::ShaderModule frag = labutils::load_shader_module(aWindow, cfg::kFragShaderPath);
+
+    //Define shader stages in the pipeline
+    VkPipelineShaderStageCreateInfo stages[2]{};
+    //Vertex shader
+    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    stages[0].module = vert.handle;
+    stages[0].pName = "main";
+
+    //Enable depth testing
+    VkPipelineDepthStencilStateCreateInfo depthInfo{};
+    depthInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+
+    depthInfo.depthTestEnable = VK_TRUE;
+    depthInfo.depthWriteEnable = VK_TRUE;
+    depthInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    depthInfo.minDepthBounds = 0.f;
+    depthInfo.maxDepthBounds = 1.f;
+
+    //Fragment shader
+    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    stages[1].module = frag.handle;
+    stages[1].pName = "main";
+
+    //Position
+    VkVertexInputBindingDescription vertexInputs[3]{};
+    vertexInputs[0].binding = 0;
+    vertexInputs[0].stride = sizeof(float) * 3;
+    vertexInputs[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    //Color
+    vertexInputs[1].binding = 1;
+    vertexInputs[1].stride = sizeof(float) * 3;
+    vertexInputs[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+
+
+    VkVertexInputAttributeDescription vertexAttributes[3]{};
+    vertexAttributes[0].binding = 0; //must match binding above
+    vertexAttributes[0].location = 0; //must match shader
+    vertexAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexAttributes[0].offset = 0;
+
+    vertexAttributes[1].binding = 1; // must match binding above
+    vertexAttributes[1].location = 1; //ditto
+    vertexAttributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexAttributes[1].offset = 0;
+
+
+    //Vertex input state
+    VkPipelineVertexInputStateCreateInfo inputInfo{};
+    inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    inputInfo.vertexBindingDescriptionCount = 2; //number of vertexInputs above
+    inputInfo.pVertexBindingDescriptions = vertexInputs;
+    inputInfo.vertexAttributeDescriptionCount = 2; //number of vertexAttributes above
+    inputInfo.pVertexAttributeDescriptions = vertexAttributes;
+
+    //Input Assembly State
+    VkPipelineInputAssemblyStateCreateInfo assemblyInfo{};
+    assemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    assemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST; //render lines
+    assemblyInfo.primitiveRestartEnable = VK_FALSE;
+
+    //Viewport state. Define viewport and scissor regions
+    VkViewport viewport{};
+    viewport.x = 0.f;
+    viewport.y = 0.f;
+    viewport.width = float(aWindow.swapchainExtent.width);
+    viewport.height = float(aWindow.swapchainExtent.height);
+    viewport.minDepth = 0.f;
+    viewport.maxDepth = 1.f;
+
+    VkRect2D scissor{};
+    scissor.offset = VkOffset2D{0, 0};
+    scissor.extent = VkExtent2D{aWindow.swapchainExtent.width, aWindow.swapchainExtent.height};
+
+    VkPipelineViewportStateCreateInfo viewportInfo{};
+    viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportInfo.viewportCount = 1;
+    viewportInfo.pViewports = &viewport;
+    viewportInfo.scissorCount = 1;
+    viewportInfo.pScissors = &scissor;
+
+    //Rasterization state- define rasterisation options
+    VkPipelineRasterizationStateCreateInfo rasterInfo{};
+    rasterInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterInfo.depthClampEnable = VK_FALSE;
+    rasterInfo.rasterizerDiscardEnable = VK_FALSE;
+    rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterInfo.depthBiasEnable = VK_FALSE;
+    rasterInfo.lineWidth = 1.f; // required.
+
+    //Define multisampling state
+    VkPipelineMultisampleStateCreateInfo samplingInfo{};
+    samplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    samplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    //Define blend state
+    VkPipelineColorBlendAttachmentState blendStates[1] = {};
+    VkPipelineColorBlendStateCreateInfo blendInfo = {};
+
+    // We define one blend state per colour attachment.
+    blendStates[0].blendEnable = VK_FALSE;
+    blendStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                    VK_COLOR_COMPONENT_A_BIT;
+
+    blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    blendInfo.logicOpEnable = VK_FALSE;
+    blendInfo.attachmentCount = 1;
+    blendInfo.pAttachments = blendStates;
+
+    //Create Pipeline
+    VkGraphicsPipelineCreateInfo pipeInfo{};
+    pipeInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+
+    pipeInfo.stageCount = 2; //vertex + fragment
+    pipeInfo.pStages = stages;
+    pipeInfo.pVertexInputState = &inputInfo;
+    pipeInfo.pInputAssemblyState = &assemblyInfo;
+    pipeInfo.pTessellationState = nullptr; // no tessellation
+    pipeInfo.pViewportState = &viewportInfo;
+    pipeInfo.pRasterizationState = &rasterInfo;
+    pipeInfo.pMultisampleState = &samplingInfo;
+    pipeInfo.pDepthStencilState = &depthInfo;
+    pipeInfo.pColorBlendState = &blendInfo;
+    pipeInfo.pDynamicState = nullptr; // no dynamic states
+
+    pipeInfo.layout = aPipelineLayout;
+    pipeInfo.renderPass = aRenderPass;
+    pipeInfo.subpass = 0; //first subpass of aRenderPass
+
+    VkPipeline pipe = VK_NULL_HANDLE;
+    if (auto const res = vkCreateGraphicsPipelines(aWindow.device, VK_NULL_HANDLE, 1, &pipeInfo, nullptr, &pipe);
+            VK_SUCCESS != res) {
+        throw labutils::Error("Unable to create graphics pipeline\n"
+                              "vkCreateGraphicsPipelines() returned %s", labutils::to_string(res).c_str());
+    }
+
+    return labutils::Pipeline(aWindow.device, pipe);
+
+}
 
 labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout) {
 

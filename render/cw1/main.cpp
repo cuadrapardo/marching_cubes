@@ -128,6 +128,7 @@ int main() try
 
     lut::PipelineLayout pipeLayout = create_pipeline_layout(window, sceneLayout.handle);
     lut::Pipeline pipe = create_pipeline(window, renderPass.handle, pipeLayout.handle);
+    lut::Pipeline edgePipe = create_line_pipeline(window, renderPass.handle, pipeLayout.handle);
 
     auto [depthBuffer, depthBufferView] = create_depth_buffer(window, allocator);
 
@@ -202,9 +203,11 @@ int main() try
     pointCloud.set_size(2);
 
     PointCloud distanceField;
-    distanceField.positions = create_regular_grid(1, pointCloud.positions);
+    // An edge is the indices of its two vertices in the grid_positions array
+    std::vector<uint32_t> grid_edges;
+    distanceField.positions = create_regular_grid(1, pointCloud.positions, grid_edges);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
-    distanceField.set_color(glm::vec3(0,0,1.0f)); //TODO: color depending on vertex value wrt isovalue
+    distanceField.set_color(glm::vec3(0,0,1.0f)); //TODO: color depending on vertex value wrt isovalue (positive, negative..)
 //    distanceField.set_size(1);
 
     //Create buffers for rendering
@@ -212,6 +215,8 @@ int main() try
                                                              window, allocator);
     PointBuffer gridBuffer = create_pointcloud_buffers(distanceField.positions, distanceField.colors, distanceField.point_size,
                                                        window, allocator);
+
+    //TODO: create index buffer for drawing edges
 
     std::vector<PointBuffer*> pBuffer;
     pBuffer.push_back(&pointCloudBuffer);
