@@ -191,7 +191,7 @@ LineBuffer create_index_buffer(std::vector<uint32_t> const& indices, std::vector
     labutils::Buffer vertexIdxGPU = labutils::create_buffer(
             allocator,
             index_size,
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             0, //no additional VmaAllocationCreateFlags
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE //or just VMA_MEMORY_USAGE_AUTO
     );

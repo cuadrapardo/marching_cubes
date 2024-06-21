@@ -128,7 +128,7 @@ int main() try
 
     lut::PipelineLayout pipeLayout = create_pipeline_layout(window, sceneLayout.handle);
     lut::Pipeline pipe = create_pipeline(window, renderPass.handle, pipeLayout.handle);
-    lut::Pipeline edgePipe = create_line_pipeline(window, renderPass.handle, pipeLayout.handle);
+    lut::Pipeline linePipe = create_line_pipeline(window, renderPass.handle, pipeLayout.handle);
 
     auto [depthBuffer, depthBufferView] = create_depth_buffer(window, allocator);
 
@@ -210,7 +210,7 @@ int main() try
     distanceField.set_color(glm::vec3(0,0,1.0f)); //TODO: color depending on vertex value wrt isovalue (positive, negative..)
 
     //TODO: change edge color depending on bipolar
-    edge_colors.resize(grid_edges.size()/2);
+    edge_colors.resize(grid_edges.size()); // ?? WHAT SIZE???
     std::fill(edge_colors.begin(), edge_colors.end(), glm::vec3{0.0f, 1.0f, 0.0});
 
 
@@ -363,12 +363,14 @@ int main() try
                                           renderPass.handle,
                                           framebuffers[imageIndex].handle,
                                           pipe.handle,
+                                          linePipe.handle,
                                           window.swapchainExtent,
                                           sceneUBO.buffer,
                                           sceneUniforms,
                                           pipeLayout.handle,
                                           sceneDescriptors,
-                                          pBuffer
+                                          pBuffer,
+                                          lineBuffer
                                           );
 
         submit_commands(

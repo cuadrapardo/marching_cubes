@@ -261,7 +261,7 @@ labutils::Pipeline create_line_pipeline(labutils::VulkanWindow const &aWindow, V
     VkPipelineInputAssemblyStateCreateInfo assemblyInfo{};
     assemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     assemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST; //render lines
-    assemblyInfo.primitiveRestartEnable = VK_FALSE;
+    assemblyInfo.primitiveRestartEnable = VK_FALSE; //Potential issue?
 
     //Viewport state. Define viewport and scissor regions
     VkViewport viewport{};

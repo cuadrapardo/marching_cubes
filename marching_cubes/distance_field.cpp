@@ -60,7 +60,7 @@ std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vect
                 }
                 if (k < grid_boxes.z + 1) {
                     grid_edges.emplace_back(get_index(i, j, k));
-                    grid_edges.emplace_back(get_index(i, j + 1, k));
+                    grid_edges.emplace_back(get_index(i, j, k + 1));
                 }
 
 

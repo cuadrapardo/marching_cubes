@@ -22,12 +22,14 @@ void record_commands_textured( VkCommandBuffer,
                                VkRenderPass,
                                VkFramebuffer,
                                VkPipeline,
+                               VkPipeline,
                                VkExtent2D const&,
                                VkBuffer aSceneUBO,
                                glsl::SceneUniform const&,
                                VkPipelineLayout,
                                VkDescriptorSet sceneDescriptors,
-                               std::vector<PointBuffer*> const&);
+                               std::vector<PointBuffer*> const&,
+                               LineBuffer const&);
 
 namespace ui {
     void record_commands_imgui(

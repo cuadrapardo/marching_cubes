@@ -9,9 +9,10 @@
 
 //Record commands for textured data
 void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPass, VkFramebuffer aFramebuffer,
-                               VkPipeline aGraphicsPipe, VkExtent2D const& aImageExtent, VkBuffer aSceneUBO,
-                               glsl::SceneUniform const& aSceneUniform,  VkPipelineLayout aGraphicsLayout,
-                               VkDescriptorSet aSceneDescriptors, std::vector<PointBuffer*> const& points) {
+                               VkPipeline aGraphicsPipe, VkPipeline aLinePipe, VkExtent2D const& aImageExtent,
+                               VkBuffer aSceneUBO, glsl::SceneUniform const& aSceneUniform,
+                               VkPipelineLayout aGraphicsLayout, VkDescriptorSet aSceneDescriptors,
+                               std::vector<PointBuffer*> const& points, LineBuffer const& lineBuffer) {
     //Begin recording commands
     VkCommandBufferBeginInfo begInfo {};
     begInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -80,6 +81,23 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
 
 
     }
+
+    //Bind line drawing pipeline
+    vkCmdBindPipeline(aCmdBuff,VK_PIPELINE_BIND_POINT_GRAPHICS, aLinePipe );
+
+    //Note: points[1] is the grid point buffer
+    VkBuffer buffers[2] {points[1]->positions.buffer,
+                         lineBuffer.color.buffer
+    };
+
+    VkDeviceSize offsets[2]{};
+
+    vkCmdBindVertexBuffers(aCmdBuff, 0, 2 , buffers, offsets );
+
+    vkCmdBindIndexBuffer(aCmdBuff, lineBuffer.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+    // Draw indexed
+    vkCmdDrawIndexed(aCmdBuff, static_cast<uint32_t>(points[1]->vertex_count/2), 1, 0, 0, 0);
 
     //End the render pass
     vkCmdEndRenderPass(aCmdBuff);
