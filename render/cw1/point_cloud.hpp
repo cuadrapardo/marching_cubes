@@ -24,10 +24,15 @@ struct PointBuffer {
     std::uint32_t vertex_count;
 };
 
+struct LineBuffer {
+    labutils::Buffer indices;
+    labutils::Buffer color;
+};
+
 
 PointBuffer create_pointcloud_buffers(std::vector<glm::vec3> positions, std::vector<glm::vec3> color, std::vector<float> scale,
                              labutils::VulkanContext const& window, labutils::Allocator const& allocator);
 
-labutils::Buffer create_index_buffer(std::vector<uint32_t>&, labutils::VulkanContext const& window, labutils::Allocator const& allocator);
+LineBuffer create_index_buffer(std::vector<uint32_t> const&, std::vector<glm::vec3> const&, labutils::VulkanContext const& window, labutils::Allocator const& allocator);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_POINT_CLOUD_HPP

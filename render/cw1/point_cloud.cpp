@@ -183,15 +183,14 @@ PointBuffer create_pointcloud_buffers(std::vector<glm::vec3> positions, std::vec
 
 }
 
-/*
-labutils::Buffer create_index_buffer(std::vector<uint32_t> const& index_buffer, labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
-    std::uint32_t positions_size = sizeof(index_buffer[0]) * (in.size());
-    std::uint32_t color_size = sizeof(colors[0]) * (colors.size());
-    std::uint32_t scalar_size = sizeof(scalar[0]) * scalar.size();
 
-    labutils::Buffer vertexPosGPU = labutils::create_buffer(
+LineBuffer create_index_buffer(std::vector<uint32_t> const& indices, std::vector<glm::vec3> const& colors, labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
+    std::uint32_t index_size = sizeof(indices[0]) * (indices.size());
+    std::uint32_t color_size = sizeof(colors[0]) * (colors.size());
+
+    labutils::Buffer vertexIdxGPU = labutils::create_buffer(
             allocator,
-            positions_size,
+            index_size,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             0, //no additional VmaAllocationCreateFlags
             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE //or just VMA_MEMORY_USAGE_AUTO
@@ -205,16 +204,9 @@ labutils::Buffer create_index_buffer(std::vector<uint32_t> const& index_buffer, 
     );
 
 
-    labutils::Buffer vertexScalarGPU = labutils::create_buffer(allocator,
-                                                               scalar_size,
-                                                               VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                                               0,
-                                                               VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE
-    );
 
-
-    labutils::Buffer posStaging = labutils::create_buffer(allocator,
-                                                          positions_size,
+    labutils::Buffer idxStaging = labutils::create_buffer(allocator,
+                                                          index_size,
                                                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                           VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
@@ -223,20 +215,15 @@ labutils::Buffer create_index_buffer(std::vector<uint32_t> const& index_buffer, 
                                                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                           VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
-    labutils::Buffer scalarStaging = labutils::create_buffer(allocator,
-                                                             scalar_size,
-                                                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                                             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
-
-    void *posPtr = nullptr;
-    if (auto const res = vmaMapMemory(allocator.allocator, posStaging.allocation, &posPtr); VK_SUCCESS !=
+    void *idxPtr = nullptr;
+    if (auto const res = vmaMapMemory(allocator.allocator, idxStaging.allocation, &idxPtr); VK_SUCCESS !=
                                                                                             res) {
         throw labutils::Error("Mapping memory for writing\n"
                               "vmaMapMemory() returned %s", labutils::to_string(res).c_str());
     }
-    std::memcpy(posPtr, positions.data(), positions_size);
-    vmaUnmapMemory(allocator.allocator, posStaging.allocation);
+    std::memcpy(idxPtr, indices.data(), index_size);
+    vmaUnmapMemory(allocator.allocator, idxStaging.allocation);
 
     void* colPtr = nullptr;
     if(auto const res = vmaMapMemory(allocator.allocator, colStaging.allocation, &colPtr); VK_SUCCESS != res){
@@ -245,14 +232,6 @@ labutils::Buffer create_index_buffer(std::vector<uint32_t> const& index_buffer, 
     }
     std::memcpy(colPtr, colors.data() , color_size);
     vmaUnmapMemory(allocator.allocator, colStaging.allocation);
-
-    void* scalarPtr = nullptr;
-    if(auto const res = vmaMapMemory(allocator.allocator, scalarStaging.allocation, &scalarPtr); VK_SUCCESS != res){
-        throw labutils::Error("Mapping memory for writing\n"
-                              "vmaMapMemory() returned %s", labutils::to_string(res).c_str());
-    }
-    std::memcpy(scalarPtr, scalar.data() , scalar_size);
-    vmaUnmapMemory(allocator.allocator, scalarStaging.allocation);
 
 
     //We need to ensure that the Vulkan resources are alive until all the transfers have completed. For simplicity,
@@ -277,12 +256,12 @@ labutils::Buffer create_index_buffer(std::vector<uint32_t> const& index_buffer, 
     }
 
     VkBufferCopy pcopy{};
-    pcopy.size = positions_size;
+    pcopy.size = index_size;
 
-    vkCmdCopyBuffer(uploadCmd, posStaging.buffer, vertexPosGPU.buffer, 1, &pcopy);
+    vkCmdCopyBuffer(uploadCmd, idxStaging.buffer, vertexIdxGPU.buffer, 1, &pcopy);
 
     labutils::buffer_barrier(uploadCmd,
-                             vertexPosGPU.buffer,
+                             vertexIdxGPU.buffer,
                              VK_ACCESS_TRANSFER_WRITE_BIT,
                              VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
                              VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -301,18 +280,6 @@ labutils::Buffer create_index_buffer(std::vector<uint32_t> const& index_buffer, 
                              VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
     );
 
-    VkBufferCopy scopy{};
-    scopy.size = scalar_size;
-
-    vkCmdCopyBuffer(uploadCmd, scalarStaging.buffer, vertexScalarGPU.buffer, 1, &scopy);
-
-    labutils::buffer_barrier(uploadCmd,
-                             vertexScalarGPU.buffer,
-                             VK_ACCESS_TRANSFER_WRITE_BIT,
-                             VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-                             VK_PIPELINE_STAGE_TRANSFER_BIT,
-                             VK_PIPELINE_STAGE_VERTEX_INPUT_BIT
-    );
 
     if(auto const res = vkEndCommandBuffer(uploadCmd);VK_SUCCESS != res) {
         throw labutils::Error("Ending command buffer recording\n"
@@ -345,15 +312,12 @@ labutils::Buffer create_index_buffer(std::vector<uint32_t> const& index_buffer, 
                               "vkWaitForFences() returned %s", labutils::to_string(res).c_str());
     }
 
-    return PointBuffer {
-            std::move(vertexPosGPU),
-            std::move(vertexColGPU),
-            std::move(vertexScalarGPU),
-            static_cast<uint32_t>(positions.size())
+    return LineBuffer {
+            std::move(vertexIdxGPU),
+            std::move(vertexColGPU)
     };
 
-
-} */
+}
 
 void PointCloud::set_color(const glm::vec3& color) {
     colors.resize(positions.size());

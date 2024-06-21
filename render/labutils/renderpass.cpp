@@ -197,7 +197,7 @@ labutils::PipelineLayout create_pipeline_layout(labutils::VulkanContext const &a
 
 labutils::Pipeline create_line_pipeline(labutils::VulkanWindow const &aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout) {
     //Load shader modules
-    labutils::ShaderModule vert = labutils::load_shader_module(aWindow, cfg::kVertShaderPath);
+    labutils::ShaderModule vert = labutils::load_shader_module(aWindow, cfg::kLineVertShaderPath);
     labutils::ShaderModule frag = labutils::load_shader_module(aWindow, cfg::kFragShaderPath);
 
     //Define shader stages in the pipeline

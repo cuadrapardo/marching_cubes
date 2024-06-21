@@ -200,23 +200,28 @@ int main() try
     PointCloud pointCloud;
     pointCloud.positions = load_file(cfg::torusTri, window, allocator);
     pointCloud.set_color(glm::vec3(1.0f, 0, 0));
-    pointCloud.set_size(2);
+    pointCloud.set_size(2); //TODO: pass this as a parameter ?
 
     PointCloud distanceField;
-    // An edge is the indices of its two vertices in the grid_positions array
-    std::vector<uint32_t> grid_edges;
+    std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
+    std::vector<glm::vec3> edge_colors;
     distanceField.positions = create_regular_grid(1, pointCloud.positions, grid_edges);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     distanceField.set_color(glm::vec3(0,0,1.0f)); //TODO: color depending on vertex value wrt isovalue (positive, negative..)
-//    distanceField.set_size(1);
+
+    //TODO: change edge color depending on bipolar
+    edge_colors.resize(grid_edges.size()/2);
+    std::fill(edge_colors.begin(), edge_colors.end(), glm::vec3{0.0f, 1.0f, 0.0});
+
+
 
     //Create buffers for rendering
     PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
                                                              window, allocator);
     PointBuffer gridBuffer = create_pointcloud_buffers(distanceField.positions, distanceField.colors, distanceField.point_size,
                                                        window, allocator);
+    LineBuffer lineBuffer = create_index_buffer(grid_edges, edge_colors, window, allocator);
 
-    //TODO: create index buffer for drawing edges
 
     std::vector<PointBuffer*> pBuffer;
     pBuffer.push_back(&pointCloudBuffer);
