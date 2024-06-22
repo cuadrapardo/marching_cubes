@@ -97,7 +97,7 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
     vkCmdBindIndexBuffer(aCmdBuff, lineBuffer.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
     // Draw indexed
-    vkCmdDrawIndexed(aCmdBuff, static_cast<uint32_t>(points[1]->vertex_count/2), 1, 0, 0, 0);
+    vkCmdDrawIndexed(aCmdBuff, static_cast<uint32_t>(lineBuffer.vertex_count), 1, 0, 0, 0);
 
     //End the render pass
     vkCmdEndRenderPass(aCmdBuff);

@@ -262,6 +262,7 @@ int main() try
             if(changes.changedSize){
                 std::tie(depthBuffer, depthBufferView) = create_depth_buffer(window, allocator);
                 pipe = create_pipeline(window, renderPass.handle, pipeLayout.handle);
+                linePipe = create_line_pipeline(window, renderPass.handle, pipeLayout.handle);
             }
 
             framebuffers.clear();

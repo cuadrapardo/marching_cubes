@@ -8,9 +8,11 @@
 #include "../render/labutils/to_string.hpp"
 #include "../render/labutils/error.hpp"
 #include <cstring>
+#include <iostream>
 
 
 std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vector<glm::vec3> const& point_cloud, std::vector<uint32_t>& grid_edges) {
+    std::cout << "Creating regular grid" << std::endl;
     std::vector<glm::vec3> grid_positions;
     //Determine size of point cloud (bounding box)
     glm::vec3 min = {std::numeric_limits<float>::max(),std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
@@ -41,7 +43,7 @@ std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vect
     }; // note this will only work in a loop structured like the one below
 
     for (unsigned int i = 0; i <= grid_boxes.x + 1 ; i++) {
-        for(unsigned int j = 0; j <= grid_boxes.y + 1; j++) {
+        for(unsigned int j = 0; j <= grid_boxes.y + 1; j++) { // j 26 i 4 k 0
             for(unsigned int k = 0; k <= grid_boxes.z + 1; k++) {
                 grid_positions.emplace_back(
                             min.x + (i * scale),
@@ -75,6 +77,7 @@ std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vect
 
 //For each grid vertex, find distance to nearest point cloud vertices
 std::vector<float> calculate_distance_field(std::vector<glm::vec3> const& grid_vertices, std::vector<glm::vec3> const& point_cloud_vertices) {
+    std::cout << "Calculating distance field" << std::endl;
     std::vector<float> grid_scalar_value;
 
     for(auto const& grid_vertex : grid_vertices) {

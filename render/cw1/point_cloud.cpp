@@ -314,7 +314,8 @@ LineBuffer create_index_buffer(std::vector<uint32_t> const& indices, std::vector
 
     return LineBuffer {
             std::move(vertexIdxGPU),
-            std::move(vertexColGPU)
+            std::move(vertexColGPU),
+            static_cast<uint32_t>(indices.size())
     };
 
 }

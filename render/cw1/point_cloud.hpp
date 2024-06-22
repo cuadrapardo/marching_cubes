@@ -27,6 +27,7 @@ struct PointBuffer {
 struct LineBuffer {
     labutils::Buffer indices;
     labutils::Buffer color;
+    std::uint32_t vertex_count;
 };
 
 
