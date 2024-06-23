@@ -329,4 +329,3 @@ void PointCloud::set_size(const unsigned int& size) {
     point_size.resize(positions.size());
     std::fill(point_size.begin(), point_size.end(), size);
 }
-

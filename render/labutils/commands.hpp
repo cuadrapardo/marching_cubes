@@ -28,8 +28,9 @@ void record_commands_textured( VkCommandBuffer,
                                glsl::SceneUniform const&,
                                VkPipelineLayout,
                                VkDescriptorSet sceneDescriptors,
-                               std::vector<PointBuffer*> const&,
-                               LineBuffer const&);
+                               std::vector<PointBuffer> const&,
+                               std::vector<LineBuffer> const&
+                               );
 
 namespace ui {
     void record_commands_imgui(

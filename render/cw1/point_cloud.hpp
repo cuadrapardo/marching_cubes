@@ -15,6 +15,7 @@ struct PointCloud {
 
     void set_color(glm::vec3 const& color);
     void set_size(unsigned int const& size);
+    void clear();
 };
 
 struct PointBuffer {
@@ -35,5 +36,9 @@ PointBuffer create_pointcloud_buffers(std::vector<glm::vec3> positions, std::vec
                              labutils::VulkanContext const& window, labutils::Allocator const& allocator);
 
 LineBuffer create_index_buffer(std::vector<uint32_t> const&, std::vector<glm::vec3> const&, labutils::VulkanContext const& window, labutils::Allocator const& allocator);
+
+
+
+
 
 #endif //MARCHING_CUBES_POINT_CLOUD_POINT_CLOUD_HPP

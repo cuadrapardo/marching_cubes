@@ -11,7 +11,7 @@
 #include <iostream>
 
 
-std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vector<glm::vec3> const& point_cloud, std::vector<uint32_t>& grid_edges) {
+std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::vector<glm::vec3> const& point_cloud, std::vector<uint32_t>& grid_edges) {
     std::cout << "Creating regular grid" << std::endl;
     std::vector<glm::vec3> grid_positions;
     //Determine size of point cloud (bounding box)
@@ -77,7 +77,7 @@ std::vector<glm::vec3> create_regular_grid(int const& grid_resolution, std::vect
 
 //For each grid vertex, find distance to nearest point cloud vertices
 std::vector<float> calculate_distance_field(std::vector<glm::vec3> const& grid_vertices, std::vector<glm::vec3> const& point_cloud_vertices) {
-    std::cout << "Calculating distance field" << std::endl;
+    std::cout << "Calculating distance field with " << grid_vertices.size() << " vertices" << std::endl;
     std::vector<float> grid_scalar_value;
 
     for(auto const& grid_vertex : grid_vertices) {

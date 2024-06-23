@@ -83,13 +83,20 @@ namespace
 
 namespace ui {
     bool vertices = false, vertex_color = false, distance_field = false, grid = false, edges = false, edge_color = false, surface = false;
-    int grid_resolution = 1;
-    const int grid_resolution_min = 1, grid_resolution_max = 100;
+    float grid_resolution = 1.0f;
+    const float grid_resolution_min = 1.0f, grid_resolution_max = 2.0f;
 
-    int point_cloud_size = 1;
+    bool recalculate = false;
+
+    int point_cloud_size = 5;
     const int p_cloud_size_min = 1, p_cloud_size_max = 10;
     std::string isovalue = "Input Isovalue";
+
 }
+
+struct GridUpdate {
+
+};
 
 
 
@@ -200,12 +207,12 @@ int main() try
     PointCloud pointCloud;
     pointCloud.positions = load_file(cfg::torusTri, window, allocator);
     pointCloud.set_color(glm::vec3(1.0f, 0, 0));
-    pointCloud.set_size(2); //TODO: pass this as a parameter ?
+    pointCloud.set_size(ui::point_cloud_size);
 
     PointCloud distanceField;
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
     std::vector<glm::vec3> edge_colors;
-    distanceField.positions = create_regular_grid(1, pointCloud.positions, grid_edges);
+    distanceField.positions = create_regular_grid(ui::grid_resolution, pointCloud.positions, grid_edges);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     distanceField.set_color(glm::vec3(0,0,1.0f)); //TODO: color depending on vertex value wrt isovalue (positive, negative..)
 
@@ -223,9 +230,12 @@ int main() try
     LineBuffer lineBuffer = create_index_buffer(grid_edges, edge_colors, window, allocator);
 
 
-    std::vector<PointBuffer*> pBuffer;
-    pBuffer.push_back(&pointCloudBuffer);
-    pBuffer.push_back(&gridBuffer);
+    std::vector<PointBuffer> pBuffer;
+    pBuffer.push_back(std::move(pointCloudBuffer));
+    pBuffer.push_back(std::move(gridBuffer));
+
+    std::vector<LineBuffer> lBuffer;
+    lBuffer.push_back(std::move(lineBuffer));
 
 
     auto previousClock = Clock_::now();
@@ -325,13 +335,20 @@ int main() try
         ImGui::Checkbox("View edges", &ui::edges);
         ImGui::Checkbox("View edge color", &ui::edge_color);
         ImGui::Text("Hausdorff Distance: -");
-        ImGui::SliderInt("Grid Resolution",&ui::grid_resolution, ui::grid_resolution_min, ui::grid_resolution_max);
+        ImGui::SliderFloat("Grid Resolution",&ui::grid_resolution, ui::grid_resolution_min, ui::grid_resolution_max);
         ImGui::InputText("Isovalue", const_cast<char*>(ui::isovalue.c_str()), ui::isovalue.size());
         if (ImGui::Button("Output to file")) {
             //TODO: Add output to file function here.
         }
-        if (ImGui::Button("Recalculate surface")) {
-            //TODO: Add marching cubes function with updated parameters here
+        if (ImGui::Button("Recalculate")) {
+            // Wait for GPU to finish processing
+            vkDeviceWaitIdle(window.device);
+
+            std::cout << "Grid resolution : " << ui::grid_resolution << std::endl;
+
+            recalculate_grid(pointCloud, distanceField, ui::point_cloud_size, ui::grid_resolution, pBuffer, lBuffer,
+                             window, allocator);
+
         }
 
         ImGui::Render();
@@ -371,7 +388,7 @@ int main() try
                                           pipeLayout.handle,
                                           sceneDescriptors,
                                           pBuffer,
-                                          lineBuffer
+                                          lBuffer
                                           );
 
         submit_commands(

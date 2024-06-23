@@ -12,7 +12,7 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
                                VkPipeline aGraphicsPipe, VkPipeline aLinePipe, VkExtent2D const& aImageExtent,
                                VkBuffer aSceneUBO, glsl::SceneUniform const& aSceneUniform,
                                VkPipelineLayout aGraphicsLayout, VkDescriptorSet aSceneDescriptors,
-                               std::vector<PointBuffer*> const& points, LineBuffer const& lineBuffer) {
+                               std::vector<PointBuffer> const& points, std::vector<LineBuffer> const& lineBuffers) {
     //Begin recording commands
     VkCommandBufferBeginInfo begInfo {};
     begInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -70,14 +70,14 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
                             &aSceneDescriptors, 0, nullptr);
 
     for(unsigned int p = 0; p < points.size(); p++){
-        VkBuffer buffers[3] {points[p]->positions.buffer,
-                                  points[p]->color.buffer,
-                                  points[p]->scale.buffer };
+        VkBuffer buffers[3] {points[p].positions.buffer,
+                                  points[p].color.buffer,
+                                  points[p].scale.buffer };
         VkDeviceSize offsets[3]{};
 
         vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
 
-        vkCmdDraw(aCmdBuff, points[p]->vertex_count, 1, 0, 0);
+        vkCmdDraw(aCmdBuff, points[p].vertex_count, 1, 0, 0);
 
 
     }
@@ -86,18 +86,18 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
     vkCmdBindPipeline(aCmdBuff,VK_PIPELINE_BIND_POINT_GRAPHICS, aLinePipe );
 
     //Note: points[1] is the grid point buffer
-    VkBuffer buffers[2] {points[1]->positions.buffer,
-                         lineBuffer.color.buffer
+    VkBuffer buffers[2] {points[1].positions.buffer,
+                         lineBuffers[0].color.buffer
     };
 
     VkDeviceSize offsets[2]{};
 
     vkCmdBindVertexBuffers(aCmdBuff, 0, 2 , buffers, offsets );
 
-    vkCmdBindIndexBuffer(aCmdBuff, lineBuffer.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(aCmdBuff, lineBuffers[0].indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
     // Draw indexed
-    vkCmdDrawIndexed(aCmdBuff, static_cast<uint32_t>(lineBuffer.vertex_count), 1, 0, 0, 0);
+    vkCmdDrawIndexed(aCmdBuff, static_cast<uint32_t>(lineBuffers[0].vertex_count), 1, 0, 0, 0);
 
     //End the render pass
     vkCmdEndRenderPass(aCmdBuff);
