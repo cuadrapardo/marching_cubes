@@ -12,6 +12,7 @@
 #include "vulkan_window.hpp"
 #include "vkutil.hpp"
 #include "to_string.hpp"
+#include "ui.hpp"
 #include "../../marching_cubes/distance_field.hpp"
 #include "../cw1/point_cloud.hpp"
 
@@ -29,7 +30,8 @@ void record_commands_textured( VkCommandBuffer,
                                VkPipelineLayout,
                                VkDescriptorSet sceneDescriptors,
                                std::vector<PointBuffer> const&,
-                               std::vector<LineBuffer> const&
+                               std::vector<LineBuffer> const&,
+                               UiConfiguration const& ui_config
                                );
 
 namespace ui {

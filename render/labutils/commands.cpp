@@ -12,7 +12,8 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
                                VkPipeline aGraphicsPipe, VkPipeline aLinePipe, VkExtent2D const& aImageExtent,
                                VkBuffer aSceneUBO, glsl::SceneUniform const& aSceneUniform,
                                VkPipelineLayout aGraphicsLayout, VkDescriptorSet aSceneDescriptors,
-                               std::vector<PointBuffer> const& points, std::vector<LineBuffer> const& lineBuffers) {
+                               std::vector<PointBuffer> const& points, std::vector<LineBuffer> const& lineBuffers,
+                               UiConfiguration const& ui_config) {
     //Begin recording commands
     VkCommandBufferBeginInfo begInfo {};
     begInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -62,42 +63,55 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
 
     vkCmdBeginRenderPass(aCmdBuff, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    //Begin drawing with our graphics pipeline
-    vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aGraphicsPipe);
-
     //Uniforms
     vkCmdBindDescriptorSets(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aGraphicsLayout, 0, 1,
                             &aSceneDescriptors, 0, nullptr);
 
-    for(unsigned int p = 0; p < points.size(); p++){
-        VkBuffer buffers[3] {points[p].positions.buffer,
-                                  points[p].color.buffer,
-                                  points[p].scale.buffer };
+    //Begin drawing with our graphics pipeline
+    vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aGraphicsPipe);
+
+    if(ui_config.vertices) { //Draw point cloud vertices
+        VkBuffer buffers[3] {points[0].positions.buffer,
+                             points[0].color.buffer,
+                             points[0].scale.buffer };
         VkDeviceSize offsets[3]{};
 
         vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
 
-        vkCmdDraw(aCmdBuff, points[p].vertex_count, 1, 0, 0);
-
+        vkCmdDraw(aCmdBuff, points[0].vertex_count, 1, 0, 0);
 
     }
 
-    //Bind line drawing pipeline
-    vkCmdBindPipeline(aCmdBuff,VK_PIPELINE_BIND_POINT_GRAPHICS, aLinePipe );
+    if(ui_config.distance_field) { //draw grid points
+        VkBuffer buffers[3] {points[1].positions.buffer,
+                             points[1].color.buffer,
+                             points[1].scale.buffer };
+        VkDeviceSize offsets[3]{};
 
-    //Note: points[1] is the grid point buffer
-    VkBuffer buffers[2] {points[1].positions.buffer,
-                         lineBuffers[0].color.buffer
-    };
+        vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
 
-    VkDeviceSize offsets[2]{};
+        vkCmdDraw(aCmdBuff, points[1].vertex_count, 1, 0, 0);
 
-    vkCmdBindVertexBuffers(aCmdBuff, 0, 2 , buffers, offsets );
+    }
 
-    vkCmdBindIndexBuffer(aCmdBuff, lineBuffers[0].indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+    if(ui_config.grid) {
+        //Bind line drawing pipeline
+        vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aLinePipe);
 
-    // Draw indexed
-    vkCmdDrawIndexed(aCmdBuff, static_cast<uint32_t>(lineBuffers[0].vertex_count), 1, 0, 0, 0);
+        //Note: points[1] is the grid point buffer
+        VkBuffer buffers[2] {points[1].positions.buffer,
+                             lineBuffers[0].color.buffer
+        };
+
+        VkDeviceSize offsets[2] {};
+
+        vkCmdBindVertexBuffers(aCmdBuff, 0, 2, buffers, offsets);
+
+        vkCmdBindIndexBuffer(aCmdBuff, lineBuffers[0].indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+        // Draw indexed
+        vkCmdDrawIndexed(aCmdBuff, static_cast<uint32_t>(lineBuffers[0].vertex_count), 1, 0, 0, 0);
+    }
 
     //End the render pass
     vkCmdEndRenderPass(aCmdBuff);

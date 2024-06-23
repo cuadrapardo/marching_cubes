@@ -81,25 +81,6 @@ namespace
 
 }
 
-namespace ui {
-    bool vertices = false, vertex_color = false, distance_field = false, grid = false, edges = false, edge_color = false, surface = false;
-    float grid_resolution = 1.0f;
-    const float grid_resolution_min = 1.0f, grid_resolution_max = 2.0f;
-
-    bool recalculate = false;
-
-    int point_cloud_size = 5;
-    const int p_cloud_size_min = 1, p_cloud_size_max = 10;
-    std::string isovalue = "Input Isovalue";
-
-}
-
-struct GridUpdate {
-
-};
-
-
-
 int main() try
 {
     //Create Vulkan window
@@ -118,6 +99,7 @@ int main() try
     glfwSetCursorPosCallback(window.window, &glfw_callback_motion);
 
     ImGui::CreateContext();
+    UiConfiguration ui_config;
     // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForVulkan(window.window, true);
     ImGui_ImplVulkan_InitInfo init_info = ui::setup_imgui(window, imguiDpool);
@@ -207,12 +189,12 @@ int main() try
     PointCloud pointCloud;
     pointCloud.positions = load_file(cfg::torusTri, window, allocator);
     pointCloud.set_color(glm::vec3(1.0f, 0, 0));
-    pointCloud.set_size(ui::point_cloud_size);
+    pointCloud.set_size(ui_config.point_cloud_size);
 
     PointCloud distanceField;
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
     std::vector<glm::vec3> edge_colors;
-    distanceField.positions = create_regular_grid(ui::grid_resolution, pointCloud.positions, grid_edges);
+    distanceField.positions = create_regular_grid(ui_config.grid_resolution, pointCloud.positions, grid_edges);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     distanceField.set_color(glm::vec3(0,0,1.0f)); //TODO: color depending on vertex value wrt isovalue (positive, negative..)
 
@@ -327,16 +309,15 @@ int main() try
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::Checkbox("View vertices", &ui::vertices);
-        ImGui::SliderInt("Point cloud point size",&ui::point_cloud_size, ui::p_cloud_size_min, ui::p_cloud_size_max);
-        ImGui::Checkbox("View vertex color", &ui::vertex_color);
-        ImGui::Checkbox("View distance field", &ui::distance_field);
-        ImGui::Checkbox("View 3D grid", &ui::grid);
-        ImGui::Checkbox("View edges", &ui::edges);
-        ImGui::Checkbox("View edge color", &ui::edge_color);
+        ImGui::Checkbox("View point cloud vertices", &ui_config.vertices);
+        ImGui::SliderInt("Point cloud point size",&ui_config.point_cloud_size, ui_config.p_cloud_size_min, ui_config.p_cloud_size_max); //TODO: Implement recalculation
+        ImGui::Checkbox("View distance field", &ui_config.distance_field);
+        ImGui::Checkbox("View 3D grid edges", &ui_config.grid);
+        ImGui::Checkbox("View vertex color", &ui_config.vertex_color);
+        ImGui::Checkbox("View edge color", &ui_config.edge_color);
         ImGui::Text("Hausdorff Distance: -");
-        ImGui::SliderFloat("Grid Resolution",&ui::grid_resolution, ui::grid_resolution_min, ui::grid_resolution_max);
-        ImGui::InputText("Isovalue", const_cast<char*>(ui::isovalue.c_str()), ui::isovalue.size());
+        ImGui::SliderFloat("Grid Resolution",&ui_config.grid_resolution, ui_config.grid_resolution_min, ui_config.grid_resolution_max);
+        ImGui::InputText("Isovalue", const_cast<char*>(ui_config.isovalue.c_str()), ui_config.isovalue.size());
         if (ImGui::Button("Output to file")) {
             //TODO: Add output to file function here.
         }
@@ -344,9 +325,9 @@ int main() try
             // Wait for GPU to finish processing
             vkDeviceWaitIdle(window.device);
 
-            std::cout << "Grid resolution : " << ui::grid_resolution << std::endl;
+            std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
 
-            recalculate_grid(pointCloud, distanceField, ui::point_cloud_size, ui::grid_resolution, pBuffer, lBuffer,
+            recalculate_grid(pointCloud, distanceField, ui_config.point_cloud_size, ui_config.grid_resolution, pBuffer, lBuffer,
                              window, allocator);
 
         }
@@ -388,7 +369,8 @@ int main() try
                                           pipeLayout.handle,
                                           sceneDescriptors,
                                           pBuffer,
-                                          lBuffer
+                                          lBuffer,
+                                          ui_config
                                           );
 
         submit_commands(
