@@ -76,14 +76,14 @@ std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::ve
 
 
 //For each grid vertex, find distance to nearest point cloud vertices
-std::vector<float> calculate_distance_field(std::vector<glm::vec3> const& grid_vertices, std::vector<glm::vec3> const& point_cloud_vertices) {
+std::vector<int> calculate_distance_field(std::vector<glm::vec3> const& grid_vertices, std::vector<glm::vec3> const& point_cloud_vertices) {
     std::cout << "Calculating distance field with " << grid_vertices.size() << " vertices" << std::endl;
-    std::vector<float> grid_scalar_value;
+    std::vector<int> grid_scalar_value;
 
     for(auto const& grid_vertex : grid_vertices) {
         float distance = std::numeric_limits<float>::max();
         for(auto const& pcloud_vertex: point_cloud_vertices) {
-            float d = glm::distance(grid_vertex, pcloud_vertex);
+            int d = glm::distance(grid_vertex, pcloud_vertex);
             distance = (d < distance) ? d : distance;
         }
         grid_scalar_value.push_back(distance);

@@ -11,7 +11,7 @@
 #include <cstring>
 
 //Creates position, color, scale buffers to render points
-PointBuffer create_pointcloud_buffers(std::vector<glm::vec3> positions, std::vector<glm::vec3> colors, std::vector<float> scalar,
+PointBuffer create_pointcloud_buffers(std::vector<glm::vec3> positions, std::vector<glm::vec3> colors, std::vector<int> scalar,
         labutils::VulkanContext const& window, labutils::Allocator const& allocator ) {
 
     std::uint32_t positions_size = sizeof(positions[0]) * (positions.size());

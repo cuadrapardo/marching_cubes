@@ -387,7 +387,7 @@ labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRend
 
     //Scalar value
     vertexInputs[2].binding = 2;
-    vertexInputs[2].stride = sizeof(float);
+    vertexInputs[2].stride = sizeof(int);
     vertexInputs[2].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 
