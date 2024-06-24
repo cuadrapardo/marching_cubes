@@ -14,7 +14,7 @@
 
 
 // Create regular grid in the space of the point cloud. Returns vector with 3d points of grid
-std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::vector<glm::vec3> const& point_cloud, std::vector<uint32_t>& );
+std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::vector<glm::vec3> const& point_cloud, std::vector<uint32_t>& , glm::ivec3& grid_boxes);
 
 // Find scalar value for each point in the grid. Returns vector with these values
 std::vector<int> calculate_distance_field(std::vector<glm::vec3> const& grid_vertices, std::vector<glm::vec3> const& point_cloud_vertices);
@@ -25,6 +25,6 @@ std::vector<int> calculate_distance_field(std::vector<glm::vec3> const& grid_ver
 std::vector<unsigned int> classify_grid_vertices(std::vector<int> const& grid_scalar_values, int const& isovalue);
 
 //
-std::vector<unsigned int> classify_grid_edges(std::vector<bool> const& grid_vertex_classification);
+std::pair<std::vector<unsigned int>, std::vector<glm::vec3>> classify_grid_edges(std::vector<unsigned int> const& grid_vertex_classification,  glm::ivec3 const& grid_boxes);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_DISTANCE_FIELD_HPP

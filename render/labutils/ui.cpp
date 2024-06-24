@@ -40,7 +40,7 @@ namespace ui {
 //!!! DOES NOT WORK:
 
 void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
-                      UiConfiguration const& ui_config,
+                      UiConfiguration const& ui_config, glm::ivec3& grid_extents,
                       std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
 
@@ -60,19 +60,17 @@ void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
 //    pointCloud.set_color(glm::vec3(1.0f, 0, 0));
 //    pointCloud.set_size(point_size); ONLY RECALCULATING GRID. TODO: move this elsewhere
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
-    std::vector<glm::vec3> edge_colors;
-
     distanceField.positions.clear();
     distanceField.colors.clear();
     distanceField.point_size.clear();
-    distanceField.positions = create_regular_grid(ui_config.grid_resolution, pointCloud.positions, grid_edges);
+    distanceField.positions = create_regular_grid(ui_config.grid_resolution, pointCloud.positions, grid_edges, grid_extents);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     std::vector<unsigned int> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
     distanceField.set_color(vertex_classification);
 
+
     //TODO: change edge color depending on bipolar
-    edge_colors.resize(grid_edges.size());
-    std::fill(edge_colors.begin(), edge_colors.end(), glm::vec3{0.0f, 1.0f, 0.0});
+    auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, grid_extents);
 
 
 

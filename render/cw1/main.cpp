@@ -193,17 +193,14 @@ int main() try
 
     PointCloud distanceField; //grid
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
-    std::vector<glm::vec3> edge_colors;
-    distanceField.positions = create_regular_grid(ui_config.grid_resolution, pointCloud.positions, grid_edges);
+    glm::ivec3 grid_extents;
+    distanceField.positions = create_regular_grid(ui_config.grid_resolution, pointCloud.positions, grid_edges, grid_extents);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     std::vector<unsigned int> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
     distanceField.set_color(vertex_classification);
 
-    //TODO: change edge color depending on bipolar
-    edge_colors.resize(grid_edges.size()); // ?? WHAT SIZE???
-    std::fill(edge_colors.begin(), edge_colors.end(), glm::vec3{0.5f, 0.5f, 0.0});
-
-
+    //TODO: change edge color depending on value
+    auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, grid_extents);
 
     //Create buffers for rendering
     PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
@@ -328,7 +325,7 @@ int main() try
 
             std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
 
-            recalculate_grid(pointCloud, distanceField, ui_config, pBuffer, lBuffer,
+            recalculate_grid(pointCloud, distanceField, ui_config,grid_extents,pBuffer, lBuffer,
                              window, allocator);
 
         }

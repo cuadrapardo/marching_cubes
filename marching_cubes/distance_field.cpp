@@ -11,7 +11,8 @@
 #include <iostream>
 
 
-std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::vector<glm::vec3> const& point_cloud, std::vector<uint32_t>& grid_edges) {
+std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::vector<glm::vec3> const& point_cloud, std::vector<uint32_t>& grid_edges,
+                                           glm::ivec3& grid_boxes) {
     std::cout << "Creating regular grid" << std::endl;
     std::vector<glm::vec3> grid_positions;
     //Determine size of point cloud (bounding box)
@@ -32,7 +33,7 @@ std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::ve
 
     float scale = 1.0f / grid_resolution;
 
-    glm::ivec3 grid_boxes = {
+    grid_boxes = {
             extents.x / scale,
             extents.y / scale,
             extents.z / scale,
@@ -43,7 +44,7 @@ std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::ve
     }; // note this will only work in a loop structured like the one below
 
     for (unsigned int i = 0; i <= grid_boxes.x + 1 ; i++) {
-        for(unsigned int j = 0; j <= grid_boxes.y + 1; j++) { // j 26 i 4 k 0
+        for(unsigned int j = 0; j <= grid_boxes.y + 1; j++) {
             for(unsigned int k = 0; k <= grid_boxes.z + 1; k++) {
                 grid_positions.emplace_back(
                             min.x + (i * scale),
@@ -105,5 +106,91 @@ std::vector<unsigned int> classify_grid_vertices(std::vector<int> const& grid_sc
         }
     }
     return grid_vertex_classification;
+}
 
+std::pair<std::vector<unsigned int>, std::vector<glm::vec3>> classify_grid_edges(std::vector<unsigned int> const& grid_scalar_values, glm::ivec3 const& grid_boxes) {
+    std::cout << "Classifying grid edges" << std::endl;
+    std::vector<unsigned int> edge_values;
+    std::vector<glm::vec3> edge_colors;
+    edge_colors.resize(grid_scalar_values.size()*2);
+
+    auto get_index = [grid_boxes](unsigned int i, unsigned int j, unsigned int k) -> unsigned int {
+        return i * (grid_boxes.y + 2) * (grid_boxes.z + 2) + j * (grid_boxes.z + 2) + k;
+    }; // note this will only work in a loop structured like the one below
+
+    auto get_edge_value = [](unsigned int v1, unsigned int v2) -> unsigned int {
+        if (v1 == 1 && v2 == 1) {
+            return 1; // Positive edge
+        } else if (v1 == 0 && v2 == 0) {
+            return 0; // negative edge
+        } else {
+            return 2; // Bipolar edge
+        }
+    };
+
+    auto get_edge_color = [](unsigned int value) -> glm::vec3 {
+        switch (value) {
+            case 0: //Negative
+                return glm::vec3{1.0f, 0.f, 0.f};
+                break;
+            case 1: //Positive
+                return glm::vec3{0.0f, 1.0f, 0.f};
+                break;
+            case 2: //Bipolar
+                return glm::vec3{1.0f, 0.f, 1.0f};
+                break;
+        }
+    };
+
+    for (unsigned int i = 0; i <= grid_boxes.x + 1; i++) {
+        for (unsigned int j = 0; j <= grid_boxes.y + 1; j++) {
+            for (unsigned int k = 0; k <= grid_boxes.z + 1; k++) {
+
+                unsigned int v1, v2, edge_value;
+                std::size_t idx1, idx2;
+                glm::vec3 edge_color;
+                // Check edge vertices
+                if (i < grid_boxes.x + 1) {
+                    idx1 = (get_index(i, j, k));
+                    idx2 = get_index(i + 1, j, k);
+                    v1 = grid_scalar_values[idx1];
+                    v2 = grid_scalar_values[idx2];
+
+                    edge_value = get_edge_value(v1, v2);
+                    edge_color = get_edge_color(edge_value);
+
+                    edge_colors[idx1] = edge_color;
+                    edge_colors[idx2] = edge_color;
+                    edge_values.push_back(edge_value);
+                }
+                if (j < grid_boxes.y + 1) {
+                    idx1 = (get_index(i, j, k));
+                    idx2 = get_index(i , j + 1, k);
+                    v1 = grid_scalar_values[idx1];
+                    v2 = grid_scalar_values[idx2];
+
+                    edge_value = get_edge_value(v1, v2);
+                    edge_color = get_edge_color(edge_value);
+
+                    edge_colors[idx1] = edge_color;
+                    edge_colors[idx2] = edge_color;
+                    edge_values.push_back(edge_value);
+                }
+                if (k < grid_boxes.z + 1) {
+                    idx1 = (get_index(i, j, k));
+                    idx2 = get_index(i , j , k + 1);
+                    v1 = grid_scalar_values[idx1];
+                    v2 = grid_scalar_values[idx2];
+
+                    edge_value = get_edge_value(v1, v2);
+                    edge_color = get_edge_color(edge_value);
+
+                    edge_colors[idx1] = edge_color;
+                    edge_colors[idx2] = edge_color;
+                    edge_values.push_back(edge_value);
+                }
+            }
+        }
+    }
+    return std::make_pair(edge_values, edge_colors);
 }

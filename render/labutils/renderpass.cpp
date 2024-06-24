@@ -404,7 +404,7 @@ labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRend
 
     vertexAttributes[2].binding = 2; // must match binding above
     vertexAttributes[2].location = 2; //ditto
-    vertexAttributes[2].format = VK_FORMAT_R32_SFLOAT; //Technically does not need to be signed
+    vertexAttributes[2].format = VK_FORMAT_R32_SINT; //Technically does not need to be signed
     vertexAttributes[2].offset = 0;
 
     //Vertex input state

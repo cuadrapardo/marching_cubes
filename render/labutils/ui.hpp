@@ -29,7 +29,7 @@ struct UiConfiguration {
 };
 
 void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
-                      UiConfiguration const& ui_config,
+                      UiConfiguration const& ui_config, glm::ivec3& grid_extents,
                       std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator);
 
