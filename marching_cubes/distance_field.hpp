@@ -19,9 +19,9 @@ std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::ve
 // Find scalar value for each point in the grid. Returns vector with these values
 std::vector<int> calculate_distance_field(std::vector<glm::vec3> const& grid_vertices, std::vector<glm::vec3> const& point_cloud_vertices);
 
-// Classifies vertices as positive, negative.
+// Classifies vertices as positive, negative. Returns vector with false = negative, true = positive
 // If the isovalue picked coincides with a scalar value of the distance field, the user will be asked to input another value to ensure manifoldness.
 // Generally, the isovalue will be an integer + 0.5 to ensure this condition
-std::vector<glm::vec3> classify_grid_vertices();
+std::vector<bool> classify_grid_vertices(std::vector<int> const& grid_scalar_values, int const& isovalue);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_DISTANCE_FIELD_HPP

@@ -25,11 +25,11 @@ struct UiConfiguration {
     const float grid_resolution_min = 1.0f, grid_resolution_max = 2.0f;
     int point_cloud_size = 5;
     const int p_cloud_size_min = 1, p_cloud_size_max = 10;
-    std::string isovalue = "Input Isovalue";
+    int isovalue = 5; //TODO: if user uses value 0, automatically calculate isovalue
 };
 
 void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
-                      int const& point_size, float const& grid_resolution,
+                      UiConfiguration const& ui_config,
                       std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator);
 

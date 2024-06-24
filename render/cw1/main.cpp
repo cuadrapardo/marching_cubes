@@ -188,19 +188,20 @@ int main() try
     //Load file obj, .tri, todo: point cloud format
     PointCloud pointCloud;
     pointCloud.positions = load_file(cfg::torusTri, window, allocator);
-    pointCloud.set_color(glm::vec3(1.0f, 0, 0));
+    pointCloud.set_color(glm::vec3(0, 0.5f, 0.5f));
     pointCloud.set_size(ui_config.point_cloud_size);
 
-    PointCloud distanceField;
+    PointCloud distanceField; //grid
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
     std::vector<glm::vec3> edge_colors;
     distanceField.positions = create_regular_grid(ui_config.grid_resolution, pointCloud.positions, grid_edges);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
-    distanceField.set_color(glm::vec3(0,0,1.0f)); //TODO: color depending on vertex value wrt isovalue (positive, negative..)
+    std::vector<bool> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
+    distanceField.set_color(vertex_classification);
 
     //TODO: change edge color depending on bipolar
     edge_colors.resize(grid_edges.size()); // ?? WHAT SIZE???
-    std::fill(edge_colors.begin(), edge_colors.end(), glm::vec3{0.0f, 1.0f, 0.0});
+    std::fill(edge_colors.begin(), edge_colors.end(), glm::vec3{0.5f, 0.5f, 0.0});
 
 
 
@@ -317,7 +318,7 @@ int main() try
         ImGui::Checkbox("View edge color", &ui_config.edge_color);
         ImGui::Text("Hausdorff Distance: -");
         ImGui::SliderFloat("Grid Resolution",&ui_config.grid_resolution, ui_config.grid_resolution_min, ui_config.grid_resolution_max);
-        ImGui::InputText("Isovalue", const_cast<char*>(ui_config.isovalue.c_str()), ui_config.isovalue.size());
+        ImGui::InputInt("Isovalue", &ui_config.isovalue);
         if (ImGui::Button("Output to file")) {
             //TODO: Add output to file function here.
         }
@@ -327,7 +328,7 @@ int main() try
 
             std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
 
-            recalculate_grid(pointCloud, distanceField, ui_config.point_cloud_size, ui_config.grid_resolution, pBuffer, lBuffer,
+            recalculate_grid(pointCloud, distanceField, ui_config, pBuffer, lBuffer,
                              window, allocator);
 
         }

@@ -40,7 +40,7 @@ namespace ui {
 //!!! DOES NOT WORK:
 
 void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
-                      int const& point_size, float const& grid_resolution,
+                      UiConfiguration const& ui_config,
                       std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
 
@@ -65,9 +65,10 @@ void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
     distanceField.positions.clear();
     distanceField.colors.clear();
     distanceField.point_size.clear();
-    distanceField.positions = create_regular_grid(grid_resolution, pointCloud.positions, grid_edges);
+    distanceField.positions = create_regular_grid(ui_config.grid_resolution, pointCloud.positions, grid_edges);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
-    distanceField.set_color(glm::vec3(0,0,1.0f)); //TODO: color depending on vertex value wrt isovalue (positive, negative..)
+    std::vector<bool> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
+    distanceField.set_color(vertex_classification);
 
     //TODO: change edge color depending on bipolar
     edge_colors.resize(grid_edges.size());

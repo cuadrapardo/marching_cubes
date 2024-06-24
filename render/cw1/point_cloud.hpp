@@ -14,8 +14,8 @@ struct PointCloud {
     std::vector<int> point_size;
 
     void set_color(glm::vec3 const& color);
+    void set_color(std::vector<bool> const& color);
     void set_size(unsigned int const& size);
-    void clear();
 };
 
 struct PointBuffer {
