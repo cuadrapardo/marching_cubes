@@ -92,16 +92,16 @@ std::vector<int> calculate_distance_field(std::vector<glm::vec3> const& grid_ver
 }
 
 
-std::vector<bool> classify_grid_vertices(std::vector<int> const& grid_scalar_values, int const& isovalue) {
-    std::vector<bool> grid_vertex_classification;
+std::vector<unsigned int> classify_grid_vertices(std::vector<int> const& grid_scalar_values, int const& isovalue) {
+    std::vector<unsigned int> grid_vertex_classification;
     float const isovalue_05 = isovalue + 0.5;
     for(auto const& grid_value : grid_scalar_values) {
         assert(grid_value != isovalue_05); //This should never happen, but if it does, it will not produce a manifold surface.
         if(grid_value > isovalue_05) {
-            grid_vertex_classification.push_back(true);
+            grid_vertex_classification.push_back(1);
         }
         if(grid_value < isovalue_05) {
-            grid_vertex_classification.push_back(false);
+            grid_vertex_classification.push_back(0);
         }
     }
     return grid_vertex_classification;

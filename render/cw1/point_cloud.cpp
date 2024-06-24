@@ -330,11 +330,12 @@ void PointCloud::set_size(const unsigned int& size) {
     std::fill(point_size.begin(), point_size.end(), size);
 }
 
-void PointCloud::set_color(std::vector<bool> const& color) {
+void PointCloud::set_color(std::vector<unsigned int> const& color) {
     for(auto const& value : color) {
-        if(value) {
+        if(value == 1) {
             colors.emplace_back(0.0f, 1.0f, 0.0f);
-        } else {
+        }
+        if(value == 0) {
             colors.emplace_back(1.0f, 0.0f, 0.0f);
         }
     }

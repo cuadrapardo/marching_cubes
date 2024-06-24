@@ -67,7 +67,7 @@ void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
     distanceField.point_size.clear();
     distanceField.positions = create_regular_grid(ui_config.grid_resolution, pointCloud.positions, grid_edges);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
-    std::vector<bool> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
+    std::vector<unsigned int> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
     distanceField.set_color(vertex_classification);
 
     //TODO: change edge color depending on bipolar
