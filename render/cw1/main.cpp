@@ -58,7 +58,7 @@ namespace lut = labutils;
 #include "point_cloud.hpp"
 #include "../../marching_cubes/distance_field.hpp"
 
-
+//Helper Vulkan functions
 namespace
 {
     using Clock_ = std::chrono::steady_clock;
@@ -86,10 +86,9 @@ int main() try
     //Create Vulkan window
     auto windowInfo = lut::make_vulkan_window();
     auto window = std::move(windowInfo.first);
-    auto limits = windowInfo.second;
+//    auto limits = windowInfo.second;  // Can be used for other device features
 
     lut::DescriptorPool imguiDpool = lut::create_imgui_descriptor_pool(window);
-
 
     //Configure GLFW window
     UserState state{};
@@ -98,16 +97,16 @@ int main() try
     glfwSetMouseButtonCallback(window.window, &glfw_callback_button);
     glfwSetCursorPosCallback(window.window, &glfw_callback_motion);
 
+    //Configure ImGui
     ImGui::CreateContext();
     UiConfiguration ui_config;
-    // Setup Platform/Renderer bindings
     ImGui_ImplGlfw_InitForVulkan(window.window, true);
     ImGui_ImplVulkan_InitInfo init_info = ui::setup_imgui(window, imguiDpool);
     ImGui_ImplVulkan_Init(&init_info);
     ImGui_ImplVulkan_CreateFontsTexture();
 
-
     //Initialise resources
+
     // Create VMA allocator
     lut::Allocator allocator = lut::create_allocator(window);
 
@@ -124,10 +123,9 @@ int main() try
     std::vector<lut::Framebuffer> framebuffers;
     create_swapchain_framebuffers( window, renderPass.handle, framebuffers, depthBufferView.handle );
 
-
-
     lut::CommandPool cpool = lut::create_command_pool( window, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT );
 
+    //Command buffers for standard rendering
     std::vector<VkCommandBuffer> cbuffers;
     std::vector<lut::Fence> cbfences;
 
@@ -140,7 +138,7 @@ int main() try
     lut::Semaphore imageAvailable = lut::create_semaphore( window );
     lut::Semaphore renderFinished = lut::create_semaphore( window );
 
-    //Imgui command buffers
+    //ImGui command buffers for dynamic rendering
     std::vector<VkCommandBuffer> cbuffersImgui;
     std::vector<lut::Fence> cbfencesImgui;
 
@@ -165,7 +163,7 @@ int main() try
     //Create descriptor pool
     lut::DescriptorPool dPool = lut::create_descriptor_pool(window);
 
-    // allocate descriptor set for uniform buffer
+    // Allocate descriptor set for uniform buffer
     VkDescriptorSet sceneDescriptors = lut::alloc_desc_set(window, dPool.handle, sceneLayout.handle);
     {
         VkWriteDescriptorSet desc[1]{};
@@ -191,15 +189,14 @@ int main() try
     pointCloud.set_color(glm::vec3(0, 0.5f, 0.5f));
     pointCloud.set_size(ui_config.point_cloud_size);
 
-    PointCloud distanceField; //grid
+    PointCloud distanceField; //(grid)
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
-    glm::ivec3 grid_extents;
+    glm::ivec3 grid_extents; // Extents in terms of distance in x,y,z directions.
     distanceField.positions = create_regular_grid(ui_config.grid_resolution, pointCloud.positions, grid_edges, grid_extents);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     std::vector<unsigned int> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
     distanceField.set_color(vertex_classification);
 
-    //TODO: change edge color depending on value
     auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, grid_extents);
 
     //Create buffers for rendering

@@ -13,7 +13,7 @@ void update_scene_uniforms( glsl::SceneUniform& aSceneUniforms, std::uint32_t aF
             aspect,
             cfg::kCameraNear,
             cfg::kCameraFar
-    );
+    ); //TODO: change to orthographics perspective.
     aSceneUniforms.projection[1][1] *= -1.f; //Mirror y axis
     aSceneUniforms.camera = glm::translate(glm::vec3(0.f, -0.3f, -1.f));
     aSceneUniforms.camera = aSceneUniforms.camera * glm::inverse(aState.camera2world);

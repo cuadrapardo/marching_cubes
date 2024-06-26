@@ -183,7 +183,8 @@ PointBuffer create_pointcloud_buffers(std::vector<glm::vec3> positions, std::vec
 
 }
 
-
+/* Creates indexed buffer for lines. One line is defined by 2 vertices, described in the index buffer.
+ * The index buffer indexes the grid vertex buffer. The color buffer is of grid vertex N size because it is bound as a vertex attribute. */
 LineBuffer create_index_buffer(std::vector<uint32_t> const& indices, std::vector<glm::vec3> const& colors, labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
     std::uint32_t index_size = sizeof(indices[0]) * (indices.size());
     std::uint32_t color_size = sizeof(colors[0]) * (colors.size());

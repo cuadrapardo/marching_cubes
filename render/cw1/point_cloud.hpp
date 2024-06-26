@@ -11,13 +11,14 @@
 struct PointCloud {
     std::vector<glm::vec3> positions;
     std::vector<glm::vec3> colors;
-    std::vector<int> point_size;
+    std::vector<int> point_size; // ie. scalar value
 
     void set_color(glm::vec3 const& color);
     void set_color(std::vector<unsigned int> const& color);
     void set_size(unsigned int const& size);
 };
 
+//Rendering structs for Vulkan
 struct PointBuffer {
     labutils::Buffer positions;
     labutils::Buffer color;
