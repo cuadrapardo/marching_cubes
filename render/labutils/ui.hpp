@@ -31,7 +31,7 @@ struct UiConfiguration {
 
 // Recalculates grid and scalar values with given UiConfiguration
 void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
-                      UiConfiguration const& ui_config, glm::ivec3& grid_extents,
+                      UiConfiguration const& ui_config, BoundingBox const& bbox,
                       std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator);
 

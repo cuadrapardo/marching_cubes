@@ -6,6 +6,7 @@
 #include "vkutil.hpp"
 #include "to_string.hpp"
 #include "error.hpp"
+#include "../../third_party/glm/include/glm/glm.hpp"
 
 
 
@@ -40,7 +41,7 @@ namespace ui {
  * As this is not using a double buffer, the window will */
 //TODO: Create recalculate point cloud. Maybe will be useful to resize point size- this is secondary.
 void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
-                      UiConfiguration const& ui_config, glm::ivec3& grid_extents,
+                      UiConfiguration const& ui_config, BoundingBox const& bbox,
                       std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
 
@@ -54,16 +55,25 @@ void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
      vmaDestroyBuffer(allocator.allocator, lineBuffer[0].indices.buffer, lineBuffer[0].indices.allocation);
      lineBuffer[0].vertex_count = 0;
 
+    glm::vec3 extents = glm::abs(bbox.max - bbox.min);
+    float scale = 1.0f / ui_config.grid_resolution;
+
+    glm::vec3 grid_extents = {
+            extents.x / scale,
+            extents.y / scale,
+            extents.z / scale,
+    };
+
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
     distanceField.positions.clear();
     distanceField.colors.clear();
     distanceField.point_size.clear();
-    distanceField.positions = create_regular_grid(ui_config.grid_resolution, pointCloud.positions, grid_edges, grid_extents);
+    distanceField.positions = create_regular_grid(ui_config.grid_resolution, grid_edges, bbox);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     std::vector<unsigned int> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
     distanceField.set_color(vertex_classification);
 
-    auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, grid_extents);
+    auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, bbox, ui_config.grid_resolution);
 
     //Create buffers for rendering
     PointBuffer gridPointBuffer = create_pointcloud_buffers(distanceField.positions, distanceField.colors, distanceField.point_size,

@@ -8,12 +8,25 @@ void update_scene_uniforms( glsl::SceneUniform& aSceneUniforms, std::uint32_t aF
 {
     float const aspect = aFramebufferWidth / float(aFramebufferHeight);
 
+//    float top = tan(labutils::Radians(cfg::kCameraFov).value() / 2.0f) * cfg::kCameraNear;
+//    float right = top * aspect;
+//    float bottom = -top;
+//    float left = -right;
+
     aSceneUniforms.projection = glm::perspectiveRH_ZO(
             labutils::Radians(cfg::kCameraFov).value(),
             aspect,
             cfg::kCameraNear,
             cfg::kCameraFar
-    ); //TODO: change to orthographics perspective.
+    );
+//    aSceneUniforms.projection = glm::orthoRH_ZO(
+//            left,
+//            right,
+//            bottom,
+//            top,
+//            cfg::kCameraNear,
+//            cfg::kCameraFar
+//            );
     aSceneUniforms.projection[1][1] *= -1.f; //Mirror y axis
     aSceneUniforms.camera = glm::translate(glm::vec3(0.f, -0.3f, -1.f));
     aSceneUniforms.camera = aSceneUniforms.camera * glm::inverse(aState.camera2world);

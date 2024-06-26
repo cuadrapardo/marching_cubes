@@ -189,15 +189,18 @@ int main() try
     pointCloud.set_color(glm::vec3(0, 0.5f, 0.5f));
     pointCloud.set_size(ui_config.point_cloud_size);
 
+    BoundingBox pointCloudBBox = get_bounding_box(pointCloud.positions);
+    //TODO: set camera centre as centre of point cloud.
+
     PointCloud distanceField; //(grid)
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
-    glm::ivec3 grid_extents; // Extents in terms of distance in x,y,z directions.
-    distanceField.positions = create_regular_grid(ui_config.grid_resolution, pointCloud.positions, grid_edges, grid_extents);
+
+    distanceField.positions = create_regular_grid(ui_config.grid_resolution, grid_edges, pointCloudBBox);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     std::vector<unsigned int> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
     distanceField.set_color(vertex_classification);
 
-    auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, grid_extents);
+    auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, pointCloudBBox, ui_config.grid_resolution);
 
     //Create buffers for rendering
     PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
@@ -297,7 +300,7 @@ int main() try
         auto const now = Clock_::now();
         auto const dt = std::chrono::duration_cast<Secondsf_>(now-previousClock).count();
         previousClock = now;
-        update_user_state( state, dt );
+        update_user_state( state, dt);
 
         //Imgui Layout
 
@@ -322,7 +325,7 @@ int main() try
 
             std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
 
-            recalculate_grid(pointCloud, distanceField, ui_config,grid_extents,pBuffer, lBuffer,
+            recalculate_grid(pointCloud, distanceField, ui_config, pointCloudBBox,pBuffer, lBuffer,
                              window, allocator);
 
         }

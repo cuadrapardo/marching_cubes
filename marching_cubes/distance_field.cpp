@@ -10,12 +10,8 @@
 #include <cstring>
 #include <iostream>
 
-/* Creates regular grid with given resolution (1/resolution). The grid is described in terms of 3D space units, not grid units.
- * Returns a vector of grid positions. Populates edge vector as the indices of its two ends. */
-std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::vector<glm::vec3> const& point_cloud, std::vector<uint32_t>& grid_edges,
-                                           glm::ivec3& grid_boxes) {
-    std::cout << "Creating regular grid" << std::endl;
-    std::vector<glm::vec3> grid_positions;
+/* Find min/max extents of the model in 3D space. Returns BoundingBox */
+BoundingBox get_bounding_box(std::vector<glm::vec3> const& point_cloud) {
     //Determine size of point cloud (bounding box)
     glm::vec3 min = {std::numeric_limits<float>::max(),std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
     glm::vec3 max = {std::numeric_limits<float>::lowest(),std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest()};
@@ -29,12 +25,23 @@ std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::ve
         max.y = glm::max(max.y, point.y);
         max.z = glm::max(max.z, point.z);
     }
+    return BoundingBox{
+        .min = min,
+        .max = max
+    };
+}
 
-    glm::vec3 extents = glm::abs(max-min);
 
+/* Creates regular grid with given resolution (1/resolution). The grid is described in terms of 3D space units, not grid units.
+ * Returns a vector of grid positions. Populates edge vector as the indices of its two ends. */
+std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::vector<uint32_t>& grid_edges, BoundingBox const& model_bbox) {
+    std::cout << "Creating regular grid" << std::endl;
+    std::vector<glm::vec3> grid_positions;
+
+    glm::vec3 extents = glm::abs(model_bbox.max - model_bbox.min);
     float scale = 1.0f / grid_resolution;
 
-    grid_boxes = {
+    glm::ivec3 grid_boxes = {
             extents.x / scale,
             extents.y / scale,
             extents.z / scale,
@@ -49,9 +56,9 @@ std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::ve
             for(unsigned int k = 0; k <= grid_boxes.z + 1; k++) {
                 // Add point
                 grid_positions.emplace_back(
-                            min.x + (i * scale),
-                            min.y + (j * scale),
-                            min.z + (k * scale)
+                        model_bbox.min.x + (i * scale),
+                        model_bbox.min.y + (j * scale),
+                        model_bbox.min.z + (k * scale)
                         );
 
                 // Add edges
@@ -67,9 +74,6 @@ std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::ve
                     grid_edges.emplace_back(get_index(i, j, k));
                     grid_edges.emplace_back(get_index(i, j, k + 1));
                 }
-
-
-
             }
         }
     }
@@ -117,7 +121,17 @@ std::vector<unsigned int> classify_grid_vertices(std::vector<int> const& grid_sc
  * -------------------------> 1 : positive - two endpoints of the edge are positive,
  * -------------------------> 2 : bipolar - one endpoint is positive and the other negative.
  * Returns a vector of positive/negative/bipolar classification AND its color, represented in RGB */
-std::pair<std::vector<unsigned int>, std::vector<glm::vec3>> classify_grid_edges(std::vector<unsigned int> const& grid_scalar_values, glm::ivec3 const& grid_boxes) {
+std::pair<std::vector<unsigned int>, std::vector<glm::vec3>> classify_grid_edges(std::vector<unsigned int> const& grid_scalar_values, BoundingBox const& model_bbox,
+                                                                                 float const& grid_resolution) {
+    glm::vec3 extents = glm::abs(model_bbox.max - model_bbox.min);
+    float scale = 1.0f / grid_resolution;
+
+    glm::ivec3 grid_boxes = {
+            extents.x / scale,
+            extents.y / scale,
+            extents.z / scale,
+    };
+
     std::cout << "Classifying grid edges" << std::endl;
     std::vector<unsigned int> edge_values;
     std::vector<glm::vec3> edge_colors;
