@@ -12,7 +12,7 @@
 #include "render_constants.hpp"
 
 
-void update_user_state(UserState& user, float aElapsedTime); //glm::vec3 const& modelCenter
+void update_user_state(UserState& user, float aElapsedTime,  const bool& fly_cam, glm::vec3 const& modelCenter);
 
 
 #endif //MARCHING_CUBES_POINT_CLOUD_CAMERA_HPP

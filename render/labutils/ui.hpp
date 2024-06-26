@@ -27,6 +27,8 @@ struct UiConfiguration {
     int point_cloud_size = 5;
     const int p_cloud_size_min = 1, p_cloud_size_max = 10;
     int isovalue = 5; //TODO: limit max / min depending on data.
+
+    bool flyCamera = true;
 };
 
 // Recalculates grid and scalar values with given UiConfiguration

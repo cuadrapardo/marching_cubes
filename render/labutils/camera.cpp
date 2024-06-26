@@ -4,8 +4,8 @@
 
 #include "camera.hpp"
 
-
-void update_user_state( UserState& aState, float aElapsedTime){ // glm::vec3 const& modelCenter
+//TODO: add zoom camera
+void update_user_state( UserState& aState, float aElapsedTime, const bool& fly_cam, glm::vec3 const& modelCenter){
     auto& cam = aState.camera2world;
 
     if( aState.inputMap[std::size_t(EInputState::mousing)] )
@@ -17,15 +17,18 @@ void update_user_state( UserState& aState, float aElapsedTime){ // glm::vec3 con
             auto const sens = kCameraMouseSensitivity;
             auto const dx = sens * (aState.mouseX-aState.previousX);
             auto const dy = sens * (aState.mouseY-aState.previousY);
+            if(fly_cam) {
+                cam = cam * glm::rotate( -dy, glm::vec3( 1.f, 0.f, 0.f ) );
+                cam = cam * glm::rotate( -dx, glm::vec3( 0.f, 1.f, 0.f ) );
+            } else {
+                // Translate to the center of the model
+                if(!fly_cam) cam = glm::translate(cam, modelCenter);
+                cam = cam * glm::rotate( -dy, glm::vec3( 1.f, 0.f, 0.f ) );
+                cam = cam * glm::rotate( -dx, glm::vec3( 0.f, 1.f, 0.f ) );
+                // Translate back
+                if(!fly_cam) cam = glm::translate(cam, -modelCenter);
 
-            // Translate to the center of the model
-//            cam = glm::translate(cam, modelCenter);
-
-            cam = cam * glm::rotate( -dy, glm::vec3( 1.f, 0.f, 0.f ) );
-            cam = cam * glm::rotate( -dx, glm::vec3( 0.f, 1.f, 0.f ) );
-
-            // Translate back
-//            cam = glm::translate(cam, -modelCenter);
+            }
         }
 
         aState.previousX = aState.mouseX;

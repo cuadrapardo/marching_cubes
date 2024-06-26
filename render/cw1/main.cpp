@@ -300,13 +300,24 @@ int main() try
         auto const now = Clock_::now();
         auto const dt = std::chrono::duration_cast<Secondsf_>(now-previousClock).count();
         previousClock = now;
-        update_user_state( state, dt);
+        update_user_state( state, dt, ui_config.flyCamera, (pointCloudBBox.min + pointCloudBBox.max)/2.0f);
 
         //Imgui Layout
 
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImGui::Begin("Camera Type Menu");
+        if (ImGui::RadioButton("Flying camera", ui_config.flyCamera)) {
+            ui_config.flyCamera = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Model camera", !ui_config.flyCamera)) {
+            ui_config.flyCamera = false;
+            state.camera2world = glm::identity<glm::mat4>(); //Reset camera
+        }
+
+        ImGui::End();
         ImGui::Checkbox("View point cloud vertices", &ui_config.vertices);
         ImGui::SliderInt("Point cloud point size",&ui_config.point_cloud_size, ui_config.p_cloud_size_min, ui_config.p_cloud_size_max); //TODO: Implement recalculation
         ImGui::Checkbox("View distance field", &ui_config.distance_field);
