@@ -6,11 +6,13 @@
 #define MARCHING_CUBES_POINT_CLOUD_SURFACE_RECONSTRUCTION_HPP
 
 #include <vector>
+#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
+#include <iostream>
+#include "mc_tables.h"
 
-struct Cube {
-    unsigned int vertex_indices[8];
-};
+unsigned int get_case(unsigned int const (&vertex_values)[8], float const& isolevel);
 
-void query_case_table(std::vector<unsigned int> const& grid_val);
+std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_val);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_SURFACE_RECONSTRUCTION_HPP
