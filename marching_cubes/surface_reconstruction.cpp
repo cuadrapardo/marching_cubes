@@ -24,6 +24,21 @@ unsigned int get_case(unsigned int const (&vertex_values)[8]) {
     return cube_idx;
 }
 
+/* Given two points on the edge where a vertex should be inserted according to the case tables,
+ * use their scalar values and positions to interpolate the triangle's vertex.
+ * ----> Returns interpolated vertex position between two points according to scalar value */
+glm::vec3 linear_interpolation(glm::vec3 const& point_1, glm::vec3 const& point_2,
+                               unsigned int const& scalar_1, unsigned int const& scalar_2, float const& isovalue) {
+    glm::vec3 interpolated_position;
+
+    float alpha = (isovalue - scalar_1) / (scalar_2 - scalar_1);
+
+    interpolated_position.x = (1-alpha)*point_1.x + (alpha*point_2.x);
+    interpolated_position.y = (1-alpha)*point_1.y + (alpha*point_2.y);
+    interpolated_position.z = (1-alpha)*point_1.z + (alpha*point_2.z);
+    return interpolated_position;
+}
+
 //  Axes are:
 //
 //      z
@@ -38,7 +53,7 @@ unsigned int get_case(unsigned int const (&vertex_values)[8]) {
 //            +-------------+               +-----10------+
 //          / |           / |             / |            /|
 //        /   |         /   |           2   1          6  5
-//    1 +-----+-------+  5  |         +-----|-11----+     |
+//    1 +-----|-------+  5  |         +-----|-11----+     |
 //      |   2 +-------+-----+ 6       |     +-----9-|----+
 //      |   /         |   /           3   0         7   4
 //      | /           | /             | /           | /
@@ -47,7 +62,10 @@ unsigned int get_case(unsigned int const (&vertex_values)[8]) {
 /* The diagram refers to the layout desribed in mc_tables.h
  * Given the grid values ( 0 or 1 - negative or positive), iterate and for each cube find its case.
  * Returns a vector of points where each triple(3) of vec3s define a triangle */
-void query_case_table(std::vector<unsigned int> const& grid_values, float const& grid_resolution, BoundingBox const& model_bbox) {
+std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_values, std::vector<glm::vec3> const& grid_positions,
+                      float const& grid_resolution, BoundingBox const& model_bbox, float const& input_isovalue) {
+    std::vector<glm::vec3> reconstructed_mesh;
+     float isovalue = input_isovalue + 0.5; //TODO: SHIFT IT ELSEWHERE NOT HERE.
     //TODO: double check -  are grid values in the same order as vertex index ? are they indexed 1 to 1 ?
     std::cout << "Classifying all cubes in the grid" << std::endl;
     glm::vec3 extents = glm::abs(model_bbox.max - model_bbox.min);
@@ -66,24 +84,62 @@ void query_case_table(std::vector<unsigned int> const& grid_values, float const&
     for (unsigned int i = 0; i <= grid_boxes.x + 1 ; i++) {
         for(unsigned int j = 0; j <= grid_boxes.y + 1; j++) {
             for(unsigned int k = 0; k <= grid_boxes.z + 1; k++) {
-
                 //Get cube vertices
                 unsigned int vertex_values[8];
+                unsigned int vertex_idx[8];
 
-                vertex_values[0] = grid_values[(get_index(i, j, k))];
-                vertex_values[1] = grid_values[(get_index(i, j, k+1))];
-                vertex_values[2] = grid_values[(get_index(i, j+1, k))];
-                vertex_values[3] = grid_values[(get_index(i, j+1, k+1))];
-                vertex_values[4] = grid_values[(get_index(i+1, j, k))];
-                vertex_values[5] = grid_values[(get_index(i+1, j, k+1))];
-                vertex_values[6] = grid_values[(get_index(i+1, j+1, k))];
-                vertex_values[7] = grid_values[(get_index(i+1, j+1, k+1))];
+                vertex_idx[0] = get_index(i, j, k);
+                vertex_idx[1] = get_index(i, j, k+1);
+                vertex_idx[2] = get_index(i, j+1, k);
+                vertex_idx[3] = get_index(i, j+1, k+1);
+                vertex_idx[4] = get_index(i+1, j, k);
+                vertex_idx[5] = get_index(i+1, j, k+1);
+                vertex_idx[6] = get_index(i+1, j+1, k);
+                vertex_idx[7] = get_index(i+1, j+1, k+1);
+
+                vertex_values[0] = grid_values[vertex_idx[0]];
+                vertex_values[1] = grid_values[vertex_idx[1]];
+                vertex_values[2] = grid_values[vertex_idx[2]];
+                vertex_values[3] = grid_values[vertex_idx[3]];
+                vertex_values[4] = grid_values[vertex_idx[4]];
+                vertex_values[5] = grid_values[vertex_idx[5]];
+                vertex_values[6] = grid_values[vertex_idx[6]];
+                vertex_values[7] = grid_values[vertex_idx[7]];
 
                 unsigned int case_index = get_case(vertex_values);
                 int case_entry[17];
                 std::copy(std::begin(triangleTable[case_index]), std::end(triangleTable[case_index]), case_entry); // ??? DOES THIS WORK? NEVER USED
                 unsigned int triangle_n = case_entry[0]; //Number of triangles generated in this case
                 if(triangle_n == 0) continue; //Ignore cases which do not generate triangles - ie all positive or negative vertices
+
+                unsigned int triplet_count = 0;
+                for(unsigned int triplet = 0; triplet < triangle_n; triplet++) {
+                    //Lookup edge vertices in table
+                    int triangle_edges[3] = {case_entry[triplet_count],
+                                             case_entry[triplet_count+1],
+                                             case_entry[triplet_count+2]}; // Columns 1-15 are broken into 5 triplets, each triplet representing
+                                                                        // 3 edges of a triangle which can be looked up in the edge table to find the vertices.
+                    // Get cube vertex indices
+                    int edge_0[2] =  {edgeTable[triangle_edges[0]][0], edgeTable[triangle_edges[0]][1] }; // An edge is described as the two vertices at the end
+                    int edge_1[2] =  {edgeTable[triangle_edges[1]][0], edgeTable[triangle_edges[1]][1] };
+                    int edge_2[2] =  {edgeTable[triangle_edges[2]][0], edgeTable[triangle_edges[2]][1] };
+
+                    //Interpolate edges to form a triangle
+                    glm::vec3 vertex_0 = linear_interpolation(grid_positions[vertex_idx[edge_0[0]]], grid_positions[vertex_idx[edge_0[1]]],
+                                         grid_values[vertex_idx[edge_0[0]]], grid_values[vertex_idx[edge_0[1]]], isovalue);
+
+                    glm::vec3 vertex_1 = linear_interpolation(grid_positions[vertex_idx[edge_1[0]]], grid_positions[vertex_idx[edge_1[1]]],
+                                                              grid_values[vertex_idx[edge_1[0]]], grid_values[vertex_idx[edge_1[1]]], isovalue);
+
+                    glm::vec3 vertex_2 = linear_interpolation(grid_positions[vertex_idx[edge_2[0]]], grid_positions[vertex_idx[edge_2[1]]],
+                                                              grid_values[vertex_idx[edge_2[0]]], grid_values[vertex_idx[edge_2[1]]],  isovalue);
+                    reconstructed_mesh.push_back(vertex_0); // ??? winding order????!
+                    reconstructed_mesh.push_back(vertex_1);
+                    reconstructed_mesh.push_back(vertex_2);
+
+                    triplet_count += 3;
+                }
+
             }
         }
     }
