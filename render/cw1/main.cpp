@@ -399,8 +399,6 @@ int main() try
         }
         ImGui::End();
 #endif
-
-
         ImGui::Render();
 
         //Prepare data for this frame

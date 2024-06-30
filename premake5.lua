@@ -137,16 +137,11 @@ project "marching-cubes-test"
 		"marching_cubes_test/**.hxx"
 	}
 
-	kind "ConsoleApp"
-	location "test/marching_cubes_test"
+	kind "StaticLib"
+	location "marching_cubes_test"
 
 	files( sources )
 
-	links "marching-cubes"
-	links "labutils"
-
-	dependson "x-glm"
-	dependson "x-rapidobj"
 
 
 --EOF
