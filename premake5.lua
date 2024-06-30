@@ -130,4 +130,23 @@ project "marching-cubes"
 
 	files( sources )
 
+project "marching-cubes-test"
+	local sources = {
+		"marching_cubes_test/**.cpp",
+		"marching_cubes_test/**.hpp",
+		"marching_cubes_test/**.hxx"
+	}
+
+	kind "ConsoleApp"
+	location "test/marching_cubes_test"
+
+	files( sources )
+
+	links "marching-cubes"
+	links "labutils"
+
+	dependson "x-glm"
+	dependson "x-rapidobj"
+
+
 --EOF
