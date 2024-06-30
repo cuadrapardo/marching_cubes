@@ -200,17 +200,32 @@ int main() try
     std::vector<unsigned int> cube_edges = get_test_scene_edges();
     BoundingBox pointCloudBBox = get_bounding_box(cube.positions);
 
-    //Create buffers for rendering
     auto [cube_edge_values, cube_edge_colors] = classify_cube_edges(test_cube, cube_edges );
+
+
+    //Create buffers for rendering
     PointBuffer cubeBuffer = create_pointcloud_buffers(cube.positions, cube.colors, cube.point_size,
                                                              window, allocator);
     LineBuffer lineBuffer = create_index_buffer(cube_edges, cube_edge_colors, window, allocator);
+
+    Mesh test;
+    test.positions.emplace_back(0,0,1);
+    test.positions.emplace_back(0,1,0);
+    test.positions.emplace_back(0,0,0);
+
+    test.set_normals(glm::vec3{1,1,0});
+    test.set_color(glm::vec3{1,0,0});
+
+    MeshBuffer test_b = create_mesh_buffer(test, window, allocator);
 
     std::vector<PointBuffer> pBuffer;
     pBuffer.push_back(std::move(cubeBuffer));
 
     std::vector<LineBuffer> lBuffer;
     lBuffer.push_back(std::move(lineBuffer));
+
+    std::vector<MeshBuffer> mBuffer;
+    mBuffer.push_back(std::move(test_b));
 
 
 
@@ -461,6 +476,7 @@ int main() try
                                           framebuffers[imageIndex].handle,
                                           pipe.handle,
                                           linePipe.handle,
+                                          trianglePipe.handle,
                                           window.swapchainExtent,
                                           sceneUBO.buffer,
                                           sceneUniforms,
@@ -468,6 +484,7 @@ int main() try
                                           sceneDescriptors,
                                           pBuffer,
                                           lBuffer,
+                                          mBuffer,
                                           ui_config
                                           );
 

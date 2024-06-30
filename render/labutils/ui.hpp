@@ -21,7 +21,7 @@ namespace ui {
 
 // Describes values of the different ImGui widgets
 struct UiConfiguration {
-    bool vertices = true, vertex_color = true, distance_field = true, grid = true, edge_color = true, surface = false;
+    bool vertices = true, vertex_color = true, distance_field = true, grid = true, edge_color = true, surface = true;
     float grid_resolution = 1.0f;
     const float grid_resolution_min = 1.0f, grid_resolution_max = 2.0f;
     int point_cloud_size = 5;

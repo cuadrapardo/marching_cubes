@@ -15,6 +15,7 @@
 #include "ui.hpp"
 #include "../../marching_cubes/distance_field.hpp"
 #include "../cw1/point_cloud.hpp"
+#include "../cw1/mesh.hpp"
 
 #include <imgui/backends/imgui_impl_vulkan.h>
 
@@ -24,6 +25,7 @@ void record_commands_textured( VkCommandBuffer,
                                VkFramebuffer,
                                VkPipeline,
                                VkPipeline,
+                               VkPipeline,
                                VkExtent2D const&,
                                VkBuffer aSceneUBO,
                                glsl::SceneUniform const&,
@@ -31,6 +33,7 @@ void record_commands_textured( VkCommandBuffer,
                                VkDescriptorSet sceneDescriptors,
                                std::vector<PointBuffer> const&,
                                std::vector<LineBuffer> const&,
+                               std::vector<MeshBuffer> const&,
                                UiConfiguration const& ui_config
                                );
 

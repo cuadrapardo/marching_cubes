@@ -9,10 +9,10 @@
 
 //Record commands for textured data
 void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPass, VkFramebuffer aFramebuffer,
-                               VkPipeline aGraphicsPipe, VkPipeline aLinePipe, VkExtent2D const& aImageExtent,
+                               VkPipeline aGraphicsPipe, VkPipeline aLinePipe, VkPipeline aTrianglePipe, VkExtent2D const& aImageExtent,
                                VkBuffer aSceneUBO, glsl::SceneUniform const& aSceneUniform,
                                VkPipelineLayout aGraphicsLayout, VkDescriptorSet aSceneDescriptors,
-                               std::vector<PointBuffer> const& points, std::vector<LineBuffer> const& lineBuffers,
+                               std::vector<PointBuffer> const& points, std::vector<LineBuffer> const& lineBuffers, std::vector<MeshBuffer> const& meshBuffers,
                                UiConfiguration const& ui_config) {
     //Begin recording commands
     VkCommandBufferBeginInfo begInfo {};
@@ -119,6 +119,21 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
 
         // Draw indexed
         vkCmdDrawIndexed(aCmdBuff, static_cast<uint32_t>(lineBuffers[0].vertex_count), 1, 0, 0, 0);
+    }
+
+    if(ui_config.surface) {
+        //Bind line drawing pipeline
+        vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aTrianglePipe);
+
+        VkBuffer buffers[3] {meshBuffers[0].positions.buffer,
+                             meshBuffers[0].colors.buffer,
+                             meshBuffers[0].positions.buffer};
+        VkDeviceSize offsets[3] {};
+
+        vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
+
+        vkCmdDraw(aCmdBuff, meshBuffers[0].vertexCount, 1, 0, 0);
+
     }
 
     //End the render pass
