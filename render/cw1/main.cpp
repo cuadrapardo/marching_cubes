@@ -17,6 +17,11 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#define OFF 0
+#define ON 1
+
+#define TEST_MODE ON
+
 #if !defined(GLM_FORCE_RADIANS)
 #	define GLM_FORCE_RADIANS
 #endif
@@ -58,6 +63,11 @@ namespace lut = labutils;
 #include "point_cloud.hpp"
 #include "../../marching_cubes/distance_field.hpp"
 
+#if TEST_MODE == ON
+    unsigned int test_cube[8] = {0};
+#endif
+
+
 //Helper Vulkan functions
 namespace
 {
@@ -80,6 +90,8 @@ namespace
     );
 
 }
+
+
 
 int main() try
 {
@@ -307,6 +319,7 @@ int main() try
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+#if TEST_MODE == OFF
         ImGui::Begin("Camera Type Menu");
         if (ImGui::RadioButton("Flying camera", ui_config.flyCamera)) {
             ui_config.flyCamera = true;
@@ -340,6 +353,53 @@ int main() try
                              window, allocator);
 
         }
+#else
+
+        if (ImGui::Button("Recalculate")) {
+            // Wait for GPU to finish processing
+            vkDeviceWaitIdle(window.device);
+
+            std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
+
+            //TODO: RECALCULATE SURFACE
+        }
+
+        // Create a window
+        ImGui::Begin("3D Cube Values");
+        if (ImGui::RadioButton("Radio 0", test_cube[0] == 1)) {
+            test_cube[0] = test_cube[0] == 1 ? 0 : 1;
+        }
+
+        if (ImGui::RadioButton("Radio 1", test_cube[1] == 1)) {
+            test_cube[1] = test_cube[1] == 1 ? 0 : 1;
+        }
+
+        if (ImGui::RadioButton("Radio 2", test_cube[2] == 1)) {
+            test_cube[2] = test_cube[2] == 1 ? 0 : 1;
+        }
+
+        if (ImGui::RadioButton("Radio 3", test_cube[3] == 1)) {
+            test_cube[3] = test_cube[3] == 1 ? 0 : 1;
+        }
+
+        if (ImGui::RadioButton("Radio 4", test_cube[4] == 1)) {
+            test_cube[4] = test_cube[4] == 1 ? 0 : 1;
+        }
+
+        if (ImGui::RadioButton("Radio 5", test_cube[5] == 1)) {
+            test_cube[5] = test_cube[5] == 1 ? 0 : 1;
+        }
+
+        if (ImGui::RadioButton("Radio 6", test_cube[6] == 1)) {
+            test_cube[6] = test_cube[6] == 1 ? 0 : 1;
+        }
+
+        if (ImGui::RadioButton("Radio 7", test_cube[7] == 1)) {
+            test_cube[7] = test_cube[7] == 1 ? 0 : 1;
+        }
+        ImGui::End();
+#endif
+
 
         ImGui::Render();
 
