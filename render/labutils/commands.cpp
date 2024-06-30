@@ -82,6 +82,7 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
 
     }
 
+#if TEST_MODE != ON
     if(ui_config.distance_field) { //draw grid points
         VkBuffer buffers[3] {points[1].positions.buffer,
                              points[1].color.buffer,
@@ -93,15 +94,22 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
         vkCmdDraw(aCmdBuff, points[1].vertex_count, 1, 0, 0);
 
     }
+#endif
 
     if(ui_config.grid) {
         //Bind line drawing pipeline
         vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aLinePipe);
-
+#if TEST_MODE == ON
+        //Note: points[1] is the grid point buffer
+        VkBuffer buffers[2] {points[0].positions.buffer,
+                             lineBuffers[0].color.buffer
+        };
+#else
         //Note: points[1] is the grid point buffer
         VkBuffer buffers[2] {points[1].positions.buffer,
                              lineBuffers[0].color.buffer
         };
+#endif
 
         VkDeviceSize offsets[2] {};
 

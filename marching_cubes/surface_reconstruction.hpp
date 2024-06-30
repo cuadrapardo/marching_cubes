@@ -10,12 +10,14 @@
 #include <glm/glm.hpp>
 #include <iostream>
 #include "mc_tables.h"
+#include "distance_field.hpp"
 
 unsigned int get_case(unsigned int const (&vertex_values)[8], float const& isolevel);
 
 glm::vec3 linear_interpolation(glm::vec3 const& point_1, glm::vec3 const& point_2,
                                unsigned int const& scalar_1, unsigned int const& scalar_2, float const& isovalue);
 
-std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_val);
+std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_values, std::vector<glm::vec3> const& grid_positions,
+                                        float const& grid_resolution, BoundingBox const& model_bbox, float const& input_isovalue);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_SURFACE_RECONSTRUCTION_HPP

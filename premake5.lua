@@ -79,6 +79,7 @@ project "cw1"
 
 	links "labutils"
 	links "marching-cubes"
+	links "marching-cubes-test"
 	links "x-volk"
 	links "x-stb"
 	links "x-glfw"

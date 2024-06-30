@@ -24,6 +24,7 @@ std::tuple<labutils::Image, labutils::ImageView> create_depth_buffer(labutils::V
 labutils::PipelineLayout create_pipeline_layout(labutils::VulkanContext const&, VkDescriptorSetLayout const&);
 labutils::Pipeline create_pipeline(labutils::VulkanWindow const &aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout);
 labutils::Pipeline create_line_pipeline(labutils::VulkanWindow const &aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout);
+labutils::Pipeline create_triangle_pipeline(labutils::VulkanWindow const &aWindow, VkRenderPass aRenderPass, VkPipelineLayout aPipelineLayout);
 
 
 #endif //MARCHING_CUBES_POINT_CLOUD_RENDERPASS_HPP

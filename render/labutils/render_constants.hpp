@@ -5,6 +5,11 @@
 #ifndef MARCHING_CUBES_POINT_CLOUD_RENDER_CONSTANTS_HPP
 #define MARCHING_CUBES_POINT_CLOUD_RENDER_CONSTANTS_HPP
 
+#define OFF 0
+#define ON 1
+
+#define TEST_MODE ON
+
 #include <volk/volk.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -60,6 +65,8 @@ namespace cfg
     constexpr char const* kLineVertShaderPath = SHADERDIR_ "line.vert.spv";
     constexpr char const* kVertShaderPath = SHADERDIR_ "point.vert.spv";
     constexpr char const* kFragShaderPath = SHADERDIR_ "point.frag.spv";
+    constexpr char const* kTriVertShaderPath = SHADERDIR_ "triangle.vert.spv";
+    constexpr char const* kTriFragShaderPath = SHADERDIR_ "triangle.frag.spv";
 #		undef SHADERDIR_
 
 

@@ -17,10 +17,7 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#define OFF 0
-#define ON 1
 
-#define TEST_MODE ON
 
 #if !defined(GLM_FORCE_RADIANS)
 #	define GLM_FORCE_RADIANS
@@ -61,10 +58,13 @@ namespace lut = labutils;
 #include "simple_model.hpp"
 #include "load_model.hpp"
 #include "point_cloud.hpp"
+#include "mesh.hpp"
+#include "../../marching_cubes/surface_reconstruction.hpp"
 #include "../../marching_cubes/distance_field.hpp"
+#include "../../marching_cubes_test/test_scene.hpp"
 
 #if TEST_MODE == ON
-    unsigned int test_cube[8] = {0};
+    std::vector<unsigned int> test_cube(8, 0);
 #endif
 
 
@@ -129,6 +129,7 @@ int main() try
     lut::PipelineLayout pipeLayout = create_pipeline_layout(window, sceneLayout.handle);
     lut::Pipeline pipe = create_pipeline(window, renderPass.handle, pipeLayout.handle);
     lut::Pipeline linePipe = create_line_pipeline(window, renderPass.handle, pipeLayout.handle);
+    lut::Pipeline trianglePipe = create_triangle_pipeline(window, renderPass.handle, pipeLayout.handle);
 
     auto [depthBuffer, depthBufferView] = create_depth_buffer(window, allocator);
 
@@ -194,7 +195,26 @@ int main() try
         constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
         vkUpdateDescriptorSets(window.device, numSets, desc, 0, nullptr);
     }
+#if TEST_MODE == ON
+    PointCloud cube = create_test_scene();
+    std::vector<unsigned int> cube_edges = get_test_scene_edges();
+    BoundingBox pointCloudBBox = get_bounding_box(cube.positions);
 
+    //Create buffers for rendering
+    auto [cube_edge_values, cube_edge_colors] = classify_cube_edges(test_cube, cube_edges );
+    PointBuffer cubeBuffer = create_pointcloud_buffers(cube.positions, cube.colors, cube.point_size,
+                                                             window, allocator);
+    LineBuffer lineBuffer = create_index_buffer(cube_edges, cube_edge_colors, window, allocator);
+
+    std::vector<PointBuffer> pBuffer;
+    pBuffer.push_back(std::move(cubeBuffer));
+
+    std::vector<LineBuffer> lBuffer;
+    lBuffer.push_back(std::move(lineBuffer));
+
+
+
+#else
     //Load file obj, .tri, todo: point cloud format
     PointCloud pointCloud;
     pointCloud.positions = load_file(cfg::torusTri, window, allocator);
@@ -214,6 +234,13 @@ int main() try
 
     auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, pointCloudBBox, ui_config.grid_resolution);
 
+    //Create marching cubes surface IMPORTANT : UNTESTED
+    Mesh reconstructedSurface;
+    reconstructedSurface.positions = query_case_table(vertex_classification, distanceField.positions, ui_config.grid_resolution,
+                                                      pointCloudBBox, ui_config.isovalue);
+    reconstructedSurface.set_color(glm::vec3{1.0f, 0.5f, 0.0f});
+    reconstructedSurface.set_normals(glm::vec3(1.0f,0,0));
+
     //Create buffers for rendering
     PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
                                                              window, allocator);
@@ -222,12 +249,16 @@ int main() try
     LineBuffer lineBuffer = create_index_buffer(grid_edges, edge_colors, window, allocator);
 
 
+    MeshBuffer meshBuffer = create_mesh_buffer(reconstructedSurface, window, allocator);
+
+
     std::vector<PointBuffer> pBuffer;
     pBuffer.push_back(std::move(pointCloudBuffer));
     pBuffer.push_back(std::move(gridBuffer));
 
     std::vector<LineBuffer> lBuffer;
     lBuffer.push_back(std::move(lineBuffer));
+#endif
 
 
     auto previousClock = Clock_::now();
