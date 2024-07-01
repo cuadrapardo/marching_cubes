@@ -445,7 +445,11 @@ labutils::Pipeline create_triangle_pipeline(labutils::VulkanWindow const &aWindo
     rasterInfo.depthClampEnable = VK_FALSE;
     rasterInfo.rasterizerDiscardEnable = VK_FALSE;
     rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
+#if TEST_MODE == ON
+    rasterInfo.cullMode = VK_CULL_MODE_NONE;
+#else
     rasterInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+#endif
     rasterInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterInfo.depthBiasEnable = VK_FALSE;
     rasterInfo.lineWidth = 1.f; // required.

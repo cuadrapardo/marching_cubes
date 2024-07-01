@@ -209,9 +209,9 @@ int main() try
     LineBuffer lineBuffer = create_index_buffer(cube_edges, cube_edge_colors, window, allocator);
 
     Mesh test;
-    test.positions.emplace_back(0,0,1);
-    test.positions.emplace_back(0,1,0);
     test.positions.emplace_back(0,0,0);
+    test.positions.emplace_back(0,0,1);
+    test.positions.emplace_back(1,0,0);
 
     test.set_normals(glm::vec3{1,1,0});
     test.set_color(glm::vec3{1,0,0});
