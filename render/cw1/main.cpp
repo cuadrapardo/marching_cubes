@@ -250,12 +250,15 @@ int main() try
     pointCloud.set_color(glm::vec3(0, 0.5f, 0.5f));
     pointCloud.set_size(ui_config.point_cloud_size);
 
-    BoundingBox pointCloudBBox = get_bounding_box(pointCloud.positions); //TODO: add grid on the sides so point cloud vertices don't coincide with grid
-
+    BoundingBox pointCloudBBox = get_bounding_box(pointCloud.positions);
     //TODO: set camera centre as centre of point cloud.
 
     PointCloud distanceField; //(grid)
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
+
+    // Extend the bounding box by one cell size in each direction to avoid edge cases
+    pointCloudBBox.max = pointCloudBBox.max + glm::vec3(1.0f/ui_config.grid_resolution);
+    pointCloudBBox.min = pointCloudBBox.min - glm::vec3(1.0f/ui_config.grid_resolution);
 
     distanceField.positions = create_regular_grid(ui_config.grid_resolution, grid_edges, pointCloudBBox);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);

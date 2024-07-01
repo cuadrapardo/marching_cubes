@@ -26,7 +26,7 @@ struct UiConfiguration {
     const float grid_resolution_min = 1.0f, grid_resolution_max = 2.0f;
     int point_cloud_size = 5;
     const int p_cloud_size_min = 1, p_cloud_size_max = 10;
-    int isovalue = 5; //TODO: limit max / min depending on data.
+    int isovalue = 2; //TODO: limit max / min depending on data.
 
     bool flyCamera = true;
 };

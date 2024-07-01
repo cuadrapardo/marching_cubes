@@ -40,10 +40,6 @@ std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::ve
 
     float scale = 1.0f / grid_resolution;
 
-    // Extend the bounding box by one cell size in each direction to avoid edge cases
-    model_bbox.max = model_bbox.max + glm::vec3(scale);
-    model_bbox.min = model_bbox.min - glm::vec3(scale);
-
     glm::vec3 extents = glm::abs(model_bbox.max - model_bbox.min);
 
     glm::ivec3 grid_boxes = {
