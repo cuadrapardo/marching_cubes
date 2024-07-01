@@ -45,7 +45,7 @@ void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
                       std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
 
-    // TODO: calculate everything in bg while scene is drawn. THEN wait idle. Then use new vertex data. This should make it more seamless
+    // TODO: Double buffer solution for a more seamless experience
     std::cout << "Destroying buffers. The window will freeze" << std::endl;
      vmaDestroyBuffer(allocator.allocator, pBuffer[1].color.buffer, pBuffer[1].color.allocation);
      vmaDestroyBuffer(allocator.allocator, pBuffer[1].positions.buffer, pBuffer[1].positions.allocation);

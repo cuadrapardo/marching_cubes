@@ -5,6 +5,8 @@
 
 #include "test_scene.hpp"
 #include "../marching_cubes/mc_tables.h"
+#include "../render/cw1/mesh.hpp"
+#include "../render/labutils/render_constants.hpp"
 
 // Vertex and edge layout:
 //
@@ -121,12 +123,57 @@ std::vector<unsigned int> get_test_scene_edges() {
 
 /* Recalculate the test scene by changing the colours depending on the vertex values,
  * and recalculate the MC surface created */
-void recalculate_test_scene(std::vector<unsigned int> const& vertex_configuration, PointCloud& test_scene) {
+void recalculate_test_scene(PointCloud& cube, Mesh& triangles, std::vector<unsigned int> const& cube_edges, std::vector<unsigned int> const& vertex_values,
+                            std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lBuffer, std::vector<MeshBuffer>& mBuffer,
+                            labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
+    //Destroy buffers. In the case of the test scene, the buffers will not change size for points and lines (since we don't change the resolution)
+    // A better approach would be to simply swap the values in the buffers.
+//    for(auto& point_buffer :pBuffer ) {
+//        vmaDestroyBuffer(allocator.allocator, point_buffer.color.buffer, point_buffer.color.allocation); // Only recalculate color THIS LINE SEG FAULTS
+//        vmaDestroyBuffer(allocator.allocator, point_buffer.positions.buffer, point_buffer.positions.allocation);
+//        vmaDestroyBuffer(allocator.allocator, point_buffer.scale.buffer, point_buffer.scale.allocation);
+
+//    }
+//    for(auto& line_buffer : lBuffer) {
+//        vmaDestroyBuffer(allocator.allocator, line_buffer.color.buffer, line_buffer.color.allocation); // Only recalculate color
+//        vmaDestroyBuffer(allocator.allocator, line_buffer.indices.buffer, line_buffer.indices.allocation);
+//    }
+//    for(auto& mesh_buffer : mBuffer) {
+//        vmaDestroyBuffer(allocator.allocator, mesh_buffer.positions.buffer, mesh_buffer.positions.allocation);
+//        vmaDestroyBuffer(allocator.allocator, mesh_buffer.colors.buffer, mesh_buffer.colors.allocation);
+//        vmaDestroyBuffer(allocator.allocator, mesh_buffer.normals.buffer, mesh_buffer.normals.allocation);
+//        mesh_buffer.vertexCount = 0;
+//    }
+
+    triangles.positions.clear();
+    triangles.normals.clear();
+
     //Recalculate vertex colors
     for(unsigned int vertex = 0; vertex < 8 ; vertex++) {
-        test_scene.colors[vertex] = (vertex_configuration[vertex] == 0) ? glm::vec3{0,0,0} : glm::vec3{1,1,1};
+        cube.colors[vertex] = (vertex_values[vertex] == 0) ? glm::vec3{0,0,0} : glm::vec3{1,1,1};
+    }
+    auto [cube_edge_values, cube_edge_colors] = classify_cube_edges(vertex_values, cube_edges );
+    //Create buffers for rendering
+    PointBuffer cubeBuffer = create_pointcloud_buffers(cube.positions, cube.colors, cube.point_size,
+                                                       window, allocator);
+    LineBuffer lineBuffer = create_index_buffer(cube_edges, cube_edge_colors, window, allocator);
+
+    Mesh case_triangles;
+    case_triangles.positions =  query_case_table_test(vertex_values, cube.positions, TEST_ISOVALUE);
+
+    case_triangles.set_normals(glm::vec3{1, 1, 0});
+    case_triangles.set_color(glm::vec3{1, 0, 0});
+
+
+    if(!case_triangles.positions.empty()) { // Do not create an empty buffer - this will produce an error.
+        MeshBuffer test_b = create_mesh_buffer(case_triangles, window, allocator);
+//        mBuffer[0] = std::move(test_b);
+        mBuffer.push_back(std::move(test_b));
     }
 
-    //TODO Recalculate surface
+    pBuffer[0] = (std::move(cubeBuffer));
+    lBuffer[0] = (std::move(lineBuffer));
+
+    std::cout << "Continue rendering with new buffers" << std::endl;
 
 }

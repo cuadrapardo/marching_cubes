@@ -44,9 +44,9 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
 
     //Begin Render pass
     VkClearValue clearValues[2] {};
-    clearValues[0].color.float32[0] = 0.1f; // Clear to a dark gray background.
-    clearValues[0].color.float32[1] = 0.1f; // If we were debugging, this would potentially
-    clearValues[0].color.float32[2] = 0.1f; // help us see whether the render pass took
+    clearValues[0].color.float32[0] = 0.5f; // Clear to a dark gray background.
+    clearValues[0].color.float32[1] = 0.25f; // If we were debugging, this would potentially
+    clearValues[0].color.float32[2] = 0.25f; // help us see whether the render pass took
     clearValues[0].color.float32[3] = 1.f; // place, even if nothing else was drawn.
 
     clearValues[1].depthStencil.depth = 1.f;
