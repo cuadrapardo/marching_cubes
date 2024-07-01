@@ -10,6 +10,15 @@
 
 #define TEST_MODE ON
 
+
+#if TEST_MODE == ON
+constexpr unsigned int TEST_CUBE_VERTEX_POSITIVE_VALUE = 2;
+constexpr unsigned int TEST_CUBE_VERTEX_NEGATIVE_VALUE = 1;
+// Maps vertex values (0- negative; 1 - positive) to a scalar value.
+#define MAP_CLASSIFICATION_TO_VALUE(x) ((x) == 0 ? TEST_CUBE_VERTEX_NEGATIVE_VALUE : TEST_CUBE_VERTEX_POSITIVE_VALUE)
+constexpr float TEST_ISOVALUE = 1.0f ;
+#endif
+
 #include <volk/volk.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>

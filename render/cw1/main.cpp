@@ -64,8 +64,24 @@ namespace lut = labutils;
 #include "../../marching_cubes_test/test_scene.hpp"
 
 #if TEST_MODE == ON
-    std::vector<unsigned int> test_cube(8, 0);
+    /* The test mode is designed so the user can have an interface where they can choose what vertices are positive/negative
+     * This allows for testing correctness of the marching cube implementation against the original cases
+     * The user modifies the test_cube_vertex_classification, where 0 is negative and 1 is positive.
+     * For linear interpolation, these vertices must also have a scalar value. Since the isovalue is 1.5 (1.0f + shifted
+     * by 0.5), using 1 for negative, and 2 for positive, is a simple solution. (see render_constants.hpp) */
+    std::vector<unsigned int> test_cube_vertex_classification = {
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+    };
 #endif
+
+
 
 
 //Helper Vulkan functions
@@ -200,7 +216,7 @@ int main() try
     std::vector<unsigned int> cube_edges = get_test_scene_edges();
     BoundingBox pointCloudBBox = get_bounding_box(cube.positions);
 
-    auto [cube_edge_values, cube_edge_colors] = classify_cube_edges(test_cube, cube_edges );
+    auto [cube_edge_values, cube_edge_colors] = classify_cube_edges(test_cube_vertex_classification, cube_edges );
 
 
     //Create buffers for rendering
@@ -209,23 +225,28 @@ int main() try
     LineBuffer lineBuffer = create_index_buffer(cube_edges, cube_edge_colors, window, allocator);
 
     Mesh test;
-    test.positions.emplace_back(0,0,0);
-    test.positions.emplace_back(0,0,1);
-    test.positions.emplace_back(1,0,0);
+    //Winding order - towards negative?
+//    test.positions.emplace_back(0,0,0);
+//    test.positions.emplace_back(0,0,1);
+//    test.positions.emplace_back(1,0,0);
+    test.positions =  query_case_table_test(test_cube_vertex_classification, cube.positions, TEST_ISOVALUE);
 
     test.set_normals(glm::vec3{1,1,0});
     test.set_color(glm::vec3{1,0,0});
 
-    MeshBuffer test_b = create_mesh_buffer(test, window, allocator);
-
     std::vector<PointBuffer> pBuffer;
+    std::vector<LineBuffer> lBuffer;
+    std::vector<MeshBuffer> mBuffer;
+
+    if(!test.positions.empty()) {
+        MeshBuffer test_b = create_mesh_buffer(test, window, allocator);
+        mBuffer.push_back(std::move(test_b));
+    }
+
     pBuffer.push_back(std::move(cubeBuffer));
 
-    std::vector<LineBuffer> lBuffer;
     lBuffer.push_back(std::move(lineBuffer));
 
-    std::vector<MeshBuffer> mBuffer;
-    mBuffer.push_back(std::move(test_b));
 
 
 
@@ -311,6 +332,7 @@ int main() try
                 std::tie(depthBuffer, depthBufferView) = create_depth_buffer(window, allocator);
                 pipe = create_pipeline(window, renderPass.handle, pipeLayout.handle);
                 linePipe = create_line_pipeline(window, renderPass.handle, pipeLayout.handle);
+                trianglePipe = create_triangle_pipeline(window, renderPass.handle, pipeLayout.handle);
             }
 
             framebuffers.clear();
@@ -412,36 +434,36 @@ int main() try
 
         // Create a window
         ImGui::Begin("3D Cube Values");
-        if (ImGui::RadioButton("Radio 0", test_cube[0] == 1)) {
-            test_cube[0] = test_cube[0] == 1 ? 0 : 1;
+        if (ImGui::RadioButton("Radio 0", test_cube_vertex_classification[0] == 1)) {
+            test_cube_vertex_classification[0] = test_cube_vertex_classification[0] == 1 ? 0 : 1;
         }
 
-        if (ImGui::RadioButton("Radio 1", test_cube[1] == 1)) {
-            test_cube[1] = test_cube[1] == 1 ? 0 : 1;
+        if (ImGui::RadioButton("Radio 1", test_cube_vertex_classification[1] == 1)) {
+            test_cube_vertex_classification[1] = test_cube_vertex_classification[1] == 1 ? 0 : 1;
         }
 
-        if (ImGui::RadioButton("Radio 2", test_cube[2] == 1)) {
-            test_cube[2] = test_cube[2] == 1 ? 0 : 1;
+        if (ImGui::RadioButton("Radio 2", test_cube_vertex_classification[2] == 1)) {
+            test_cube_vertex_classification[2] = test_cube_vertex_classification[2] == 1 ? 0 : 1;
         }
 
-        if (ImGui::RadioButton("Radio 3", test_cube[3] == 1)) {
-            test_cube[3] = test_cube[3] == 1 ? 0 : 1;
+        if (ImGui::RadioButton("Radio 3", test_cube_vertex_classification[3] == 1)) {
+            test_cube_vertex_classification[3] = test_cube_vertex_classification[3] == 1 ? 0 : 1;
         }
 
-        if (ImGui::RadioButton("Radio 4", test_cube[4] == 1)) {
-            test_cube[4] = test_cube[4] == 1 ? 0 : 1;
+        if (ImGui::RadioButton("Radio 4", test_cube_vertex_classification[4] == 1)) {
+            test_cube_vertex_classification[4] = test_cube_vertex_classification[4] == 1 ? 0 : 1;
         }
 
-        if (ImGui::RadioButton("Radio 5", test_cube[5] == 1)) {
-            test_cube[5] = test_cube[5] == 1 ? 0 : 1;
+        if (ImGui::RadioButton("Radio 5", test_cube_vertex_classification[5] == 1)) {
+            test_cube_vertex_classification[5] = test_cube_vertex_classification[5] == 1 ? 0 : 1;
         }
 
-        if (ImGui::RadioButton("Radio 6", test_cube[6] == 1)) {
-            test_cube[6] = test_cube[6] == 1 ? 0 : 1;
+        if (ImGui::RadioButton("Radio 6", test_cube_vertex_classification[6] == 1)) {
+            test_cube_vertex_classification[6] = test_cube_vertex_classification[6] == 1 ? 0 : 1;
         }
 
-        if (ImGui::RadioButton("Radio 7", test_cube[7] == 1)) {
-            test_cube[7] = test_cube[7] == 1 ? 0 : 1;
+        if (ImGui::RadioButton("Radio 7", test_cube_vertex_classification[7] == 1)) {
+            test_cube_vertex_classification[7] = test_cube_vertex_classification[7] == 1 ? 0 : 1;
         }
         ImGui::End();
 #endif

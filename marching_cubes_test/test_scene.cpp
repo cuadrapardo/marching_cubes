@@ -2,7 +2,9 @@
 // Created by Carolina Cuadra Pardo on 6/30/24.
 //
 
+
 #include "test_scene.hpp"
+#include "../marching_cubes/mc_tables.h"
 
 // Vertex and edge layout:
 //
@@ -113,6 +115,9 @@ std::vector<unsigned int> get_test_scene_edges() {
 
     return edges;
 }
+
+
+
 
 /* Recalculate the test scene by changing the colours depending on the vertex values,
  * and recalculate the MC surface created */
