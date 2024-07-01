@@ -34,12 +34,17 @@ BoundingBox get_bounding_box(std::vector<glm::vec3> const& point_cloud) {
 
 /* Creates regular grid with given resolution (1/resolution). The grid is described in terms of 3D space units, not grid units.
  * Returns a vector of grid positions. Populates edge vector as the indices of its two ends. */
-std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::vector<uint32_t>& grid_edges, BoundingBox const& model_bbox) {
+std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::vector<uint32_t>& grid_edges, BoundingBox& model_bbox) {
     std::cout << "Creating regular grid" << std::endl;
     std::vector<glm::vec3> grid_positions;
 
-    glm::vec3 extents = glm::abs(model_bbox.max - model_bbox.min);
     float scale = 1.0f / grid_resolution;
+
+    // Extend the bounding box by one cell size in each direction to avoid edge cases
+    model_bbox.max = model_bbox.max + glm::vec3(scale);
+    model_bbox.min = model_bbox.min - glm::vec3(scale);
+
+    glm::vec3 extents = glm::abs(model_bbox.max - model_bbox.min);
 
     glm::ivec3 grid_boxes = {
             extents.x / scale,

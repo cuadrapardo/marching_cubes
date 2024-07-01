@@ -68,7 +68,8 @@ namespace lut = labutils;
      * This allows for testing correctness of the marching cube implementation against the original cases
      * The user modifies the test_cube_vertex_classification, where 0 is negative and 1 is positive.
      * For linear interpolation, these vertices must also have a scalar value. Since the isovalue is 1.5 (1.0f + shifted
-     * by 0.5), using 1 for negative, and 2 for positive, is a simple solution. (see render_constants.hpp) */
+     * by 0.5), using 1 for negative, and 2 for positive, is a simple solution. (see render_constants.hpp)
+     * --> The implementation has been tested for all 15 original base cases & produce triangles correctly. */
     std::vector<unsigned int> test_cube_vertex_classification = {
             0,
             0,
@@ -249,7 +250,8 @@ int main() try
     pointCloud.set_color(glm::vec3(0, 0.5f, 0.5f));
     pointCloud.set_size(ui_config.point_cloud_size);
 
-    BoundingBox pointCloudBBox = get_bounding_box(pointCloud.positions);
+    BoundingBox pointCloudBBox = get_bounding_box(pointCloud.positions); //TODO: add grid on the sides so point cloud vertices don't coincide with grid
+
     //TODO: set camera centre as centre of point cloud.
 
     PointCloud distanceField; //(grid)
@@ -277,7 +279,7 @@ int main() try
     LineBuffer lineBuffer = create_index_buffer(grid_edges, edge_colors, window, allocator);
 
 
-    MeshBuffer meshBuffer = create_mesh_buffer(reconstructedSurface, window, allocator);
+//    MeshBuffer meshBuffer = create_mesh_buffer(reconstructedSurface, window, allocator);
 
 
     std::vector<PointBuffer> pBuffer;
@@ -286,6 +288,9 @@ int main() try
 
     std::vector<LineBuffer> lBuffer;
     lBuffer.push_back(std::move(lineBuffer));
+
+    std::vector<MeshBuffer> mBuffer;
+//    mBuffer.push_back(std::move(meshBuffer));
 #endif
 
 
@@ -397,6 +402,7 @@ int main() try
         ImGui::Checkbox("View 3D grid edges", &ui_config.grid);
         ImGui::Checkbox("View vertex color", &ui_config.vertex_color);
         ImGui::Checkbox("View edge color", &ui_config.edge_color);
+        ImGui::Checkbox("View surface", &ui_config.surface);
         ImGui::Text("Hausdorff Distance: -");
         ImGui::SliderFloat("Grid Resolution",&ui_config.grid_resolution, ui_config.grid_resolution_min, ui_config.grid_resolution_max);
         ImGui::InputInt("Isovalue", &ui_config.isovalue);

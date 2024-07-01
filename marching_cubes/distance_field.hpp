@@ -22,7 +22,7 @@ struct BoundingBox {
 BoundingBox get_bounding_box(std::vector<glm::vec3> const& point_cloud);
 
 // Create regular grid in the space of the point cloud. Returns vector with 3d points of grid
-std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::vector<uint32_t>& , const BoundingBox&);
+std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::vector<uint32_t>& , BoundingBox&);
 
 // Find scalar value for each point in the grid. Returns vector with these values
 std::vector<int> calculate_distance_field(std::vector<glm::vec3> const& grid_vertices, std::vector<glm::vec3> const& point_cloud_vertices);

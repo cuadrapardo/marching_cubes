@@ -114,7 +114,7 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
                 unsigned int triangle_n = case_entry[0]; //Number of triangles generated in this case
                 if(triangle_n == 0) continue; //Ignore cases which do not generate triangles - ie all positive or negative vertices
 
-                unsigned int triplet_count = 0;
+                unsigned int triplet_count = 1;
                 for(unsigned int triplet = 0; triplet < triangle_n; triplet++) {
                     //Lookup edge vertices in table
                     int triangle_edges[3] = {case_entry[triplet_count],
@@ -145,10 +145,11 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
             }
         }
     }
+    return reconstructed_mesh;
 
 }
 
-// !!!  I THINK THERE IS AN ISSUE WITH passing scalar values into linear interpolation
+#if TEST_MODE == ON
 std::vector<glm::vec3> query_case_table_test(std::vector<unsigned int> const& grid_values, std::vector<glm::vec3> const& grid_positions,
                                              float const& input_isovalue) {
     std::vector<glm::vec3> reconstructed_mesh;
@@ -216,5 +217,6 @@ std::vector<glm::vec3> query_case_table_test(std::vector<unsigned int> const& gr
     }
     return reconstructed_mesh;
 }
+#endif
 
 

@@ -8,6 +8,10 @@
 #include "../render/cw1/mesh.hpp"
 #include "../render/labutils/render_constants.hpp"
 
+#if TEST_MODE == ON
+//TODO: add this into premake instead of here.
+
+
 // Vertex and edge layout:
 //
 //            3             7
@@ -122,7 +126,8 @@ std::vector<unsigned int> get_test_scene_edges() {
 
 
 /* Recalculate the test scene by changing the colours depending on the vertex values,
- * and recalculate the MC surface created */
+ * and recalculate the MC surface created.ISSUE: this does NOT work as intended. It will crash with certain combinations
+ * TODO: FIXME*/
 void recalculate_test_scene(PointCloud& cube, Mesh& triangles, std::vector<unsigned int> const& cube_edges, std::vector<unsigned int> const& vertex_values,
                             std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lBuffer, std::vector<MeshBuffer>& mBuffer,
                             labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
@@ -169,3 +174,5 @@ void recalculate_test_scene(PointCloud& cube, Mesh& triangles, std::vector<unsig
     std::cout << "Continue rendering with new buffers" << std::endl;
 
 }
+
+#endif
