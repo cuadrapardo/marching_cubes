@@ -216,7 +216,7 @@ int main() try
     std::vector<unsigned int> cube_edges = get_test_scene_edges();
     BoundingBox pointCloudBBox = get_bounding_box(cube.positions);
 
-    auto [cube_edge_values, cube_edge_colors] = classify_cube_edges(test_cube_vertex_classification, cube_edges );
+    auto [cube_edge_values, cube_edge_colors] = classify_cube_edges(cube_edges, test_cube_vertex_classification );
 
 
     //Create buffers for rendering

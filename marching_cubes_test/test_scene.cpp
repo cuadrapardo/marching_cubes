@@ -126,25 +126,6 @@ std::vector<unsigned int> get_test_scene_edges() {
 void recalculate_test_scene(PointCloud& cube, Mesh& triangles, std::vector<unsigned int> const& cube_edges, std::vector<unsigned int> const& vertex_values,
                             std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lBuffer, std::vector<MeshBuffer>& mBuffer,
                             labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
-    //Destroy buffers. In the case of the test scene, the buffers will not change size for points and lines (since we don't change the resolution)
-    // A better approach would be to simply swap the values in the buffers.
-//    for(auto& point_buffer :pBuffer ) {
-//        vmaDestroyBuffer(allocator.allocator, point_buffer.color.buffer, point_buffer.color.allocation); // Only recalculate color THIS LINE SEG FAULTS
-//        vmaDestroyBuffer(allocator.allocator, point_buffer.positions.buffer, point_buffer.positions.allocation);
-//        vmaDestroyBuffer(allocator.allocator, point_buffer.scale.buffer, point_buffer.scale.allocation);
-
-//    }
-//    for(auto& line_buffer : lBuffer) {
-//        vmaDestroyBuffer(allocator.allocator, line_buffer.color.buffer, line_buffer.color.allocation); // Only recalculate color
-//        vmaDestroyBuffer(allocator.allocator, line_buffer.indices.buffer, line_buffer.indices.allocation);
-//    }
-//    for(auto& mesh_buffer : mBuffer) {
-//        vmaDestroyBuffer(allocator.allocator, mesh_buffer.positions.buffer, mesh_buffer.positions.allocation);
-//        vmaDestroyBuffer(allocator.allocator, mesh_buffer.colors.buffer, mesh_buffer.colors.allocation);
-//        vmaDestroyBuffer(allocator.allocator, mesh_buffer.normals.buffer, mesh_buffer.normals.allocation);
-//        mesh_buffer.vertexCount = 0;
-//    }
-
     triangles.positions.clear();
     triangles.normals.clear();
 
@@ -152,7 +133,7 @@ void recalculate_test_scene(PointCloud& cube, Mesh& triangles, std::vector<unsig
     for(unsigned int vertex = 0; vertex < 8 ; vertex++) {
         cube.colors[vertex] = (vertex_values[vertex] == 0) ? glm::vec3{0,0,0} : glm::vec3{1,1,1};
     }
-    auto [cube_edge_values, cube_edge_colors] = classify_cube_edges(vertex_values, cube_edges );
+    auto [cube_edge_values, cube_edge_colors] = classify_cube_edges(cube_edges, vertex_values );
     //Create buffers for rendering
     PointBuffer cubeBuffer = create_pointcloud_buffers(cube.positions, cube.colors, cube.point_size,
                                                        window, allocator);
@@ -166,9 +147,20 @@ void recalculate_test_scene(PointCloud& cube, Mesh& triangles, std::vector<unsig
 
 
     if(!case_triangles.positions.empty()) { // Do not create an empty buffer - this will produce an error.
-        MeshBuffer test_b = create_mesh_buffer(case_triangles, window, allocator);
-//        mBuffer[0] = std::move(test_b);
-        mBuffer.push_back(std::move(test_b));
+        //Check if there is a buffer already - if so, destroy it.
+        if(mBuffer.size() > 0) {
+            //Destroy buffers. In the case of the test scene, the buffers will not change size for points and lines (since we don't change the resolution)
+            // A better approach would be to simply swap the values in the buffers.
+            vmaDestroyBuffer(allocator.allocator, mBuffer[0].positions.buffer, mBuffer[0].positions.allocation);
+            vmaDestroyBuffer(allocator.allocator, mBuffer[0].colors.buffer, mBuffer[0].colors.allocation);
+            vmaDestroyBuffer(allocator.allocator, mBuffer[0].normals.buffer, mBuffer[0].normals.allocation);
+            mBuffer[0].vertexCount = 0;
+            MeshBuffer test_b = create_mesh_buffer(case_triangles, window, allocator);
+            mBuffer[0] = std::move(test_b);
+        } else {
+            MeshBuffer test_b = create_mesh_buffer(case_triangles, window, allocator);
+            mBuffer.push_back(std::move(test_b));
+        }
     }
 
     pBuffer[0] = (std::move(cubeBuffer));
