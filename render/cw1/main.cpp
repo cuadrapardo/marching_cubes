@@ -257,7 +257,7 @@ int main() try
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
 
     // Extend the bounding box by one cell size in each direction to avoid edge cases
-    pointCloudBBox.max = pointCloudBBox.max + glm::vec3(1.0f/ui_config.grid_resolution);
+    pointCloudBBox.max = pointCloudBBox.max + glm::vec3(1.0f/ui_config.grid_resolution); // Issue: I think this needs to be done more systematically.
     pointCloudBBox.min = pointCloudBBox.min - glm::vec3(1.0f/ui_config.grid_resolution);
 
     distanceField.positions = create_regular_grid(ui_config.grid_resolution, grid_edges, pointCloudBBox);
@@ -282,7 +282,7 @@ int main() try
     LineBuffer lineBuffer = create_index_buffer(grid_edges, edge_colors, window, allocator);
 
 
-//    MeshBuffer meshBuffer = create_mesh_buffer(reconstructedSurface, window, allocator);
+    MeshBuffer meshBuffer = create_mesh_buffer(reconstructedSurface, window, allocator);
 
 
     std::vector<PointBuffer> pBuffer;
@@ -293,7 +293,7 @@ int main() try
     lBuffer.push_back(std::move(lineBuffer));
 
     std::vector<MeshBuffer> mBuffer;
-//    mBuffer.push_back(std::move(meshBuffer));
+    mBuffer.push_back(std::move(meshBuffer));
 #endif
 
 

@@ -115,7 +115,8 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
                 if(triangle_n == 0) continue; //Ignore cases which do not generate triangles - ie all positive or negative vertices
 
                 unsigned int triplet_count = 1;
-                for(unsigned int triplet = 0; triplet < triangle_n; triplet++) {
+
+                for(unsigned int triplet = 0; triplet < triangle_n*3; triplet += 3) {
                     //Lookup edge vertices in table
                     int triangle_edges[3] = {case_entry[triplet_count],
                                              case_entry[triplet_count+1],
@@ -139,7 +140,6 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
                     reconstructed_mesh.push_back(vertex_1);
                     reconstructed_mesh.push_back(vertex_2);
 
-                    triplet_count += 3;
                 }
 
             }
