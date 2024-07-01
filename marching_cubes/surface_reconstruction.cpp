@@ -35,6 +35,8 @@ glm::vec3 linear_interpolation(glm::vec3 const& point_1, glm::vec3 const& point_
 
     float alpha = (isovalue - (float)scalar_1) / ((float)scalar_2 - scalar_1);
 
+    alpha = glm::clamp(alpha, 0.0f, 1.0f); // ??? Double check with hamish that this is appropriate.
+
     interpolated_position.x = (1-alpha)*point_1.x + (alpha*point_2.x);
     interpolated_position.y = (1-alpha)*point_1.y + (alpha*point_2.y);
     interpolated_position.z = (1-alpha)*point_1.z + (alpha*point_2.z);
@@ -110,7 +112,7 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
 
                 unsigned int case_index = get_case(vertex_values);
                 int case_entry[17];
-                std::copy(std::begin(triangleTable[case_index]), std::end(triangleTable[case_index]), case_entry); // ??? DOES THIS WORK? NEVER USED
+                std::copy(std::begin(triangleTable[case_index]), std::end(triangleTable[case_index]), case_entry);
                 unsigned int triangle_n = case_entry[0]; //Number of triangles generated in this case
                 if(triangle_n == 0) continue; //Ignore cases which do not generate triangles - ie all positive or negative vertices
 
@@ -128,14 +130,23 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
                     int edge_2[2] =  {edgeTable[triangle_edges[2]][0], edgeTable[triangle_edges[2]][1] };
 
                     //Interpolate edges to form a triangle
-                    glm::vec3 vertex_0 = linear_interpolation(grid_positions[vertex_idx[edge_0[0]]], grid_positions[vertex_idx[edge_0[1]]],
-                                         grid_values[vertex_idx[edge_0[0]]], grid_values[vertex_idx[edge_0[1]]], isovalue);
+                    unsigned int const& edge_0_vertex_0_idx = vertex_idx[edge_0[0]];
+                    unsigned int const& edge_0_vertex_1_idx = vertex_idx[edge_0[1]];
 
-                    glm::vec3 vertex_1 = linear_interpolation(grid_positions[vertex_idx[edge_1[0]]], grid_positions[vertex_idx[edge_1[1]]],
-                                                              grid_values[vertex_idx[edge_1[0]]], grid_values[vertex_idx[edge_1[1]]], isovalue);
+                    unsigned int const& edge_1_vertex_0_idx = vertex_idx[edge_1[0]];
+                    unsigned int const& edge_1_vertex_1_idx = vertex_idx[edge_1[1]];
 
-                    glm::vec3 vertex_2 = linear_interpolation(grid_positions[vertex_idx[edge_2[0]]], grid_positions[vertex_idx[edge_2[1]]],
-                                                              grid_values[vertex_idx[edge_2[0]]], grid_values[vertex_idx[edge_2[1]]],  isovalue);
+                    unsigned int const& edge_2_vertex_0_idx = vertex_idx[edge_2[0]];
+                    unsigned int const& edge_2_vertex_1_idx = vertex_idx[edge_2[1]];
+
+                    glm::vec3 vertex_0 = linear_interpolation(grid_positions[edge_0_vertex_0_idx], grid_positions[edge_0_vertex_1_idx],
+                                         grid_values[edge_0_vertex_0_idx], grid_values[edge_0_vertex_1_idx], isovalue);
+
+                    glm::vec3 vertex_1 = linear_interpolation(grid_positions[edge_1_vertex_0_idx], grid_positions[edge_1_vertex_1_idx],
+                                                              grid_values[edge_1_vertex_0_idx], grid_values[edge_1_vertex_1_idx], isovalue);
+
+                    glm::vec3 vertex_2 = linear_interpolation(grid_positions[edge_2_vertex_0_idx], grid_positions[edge_2_vertex_1_idx],
+                                                              grid_values[edge_2_vertex_0_idx], grid_values[edge_2_vertex_1_idx],  isovalue);
                     reconstructed_mesh.push_back(vertex_0); // ??? winding order????!
                     reconstructed_mesh.push_back(vertex_1);
                     reconstructed_mesh.push_back(vertex_2);

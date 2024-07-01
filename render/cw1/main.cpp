@@ -282,7 +282,6 @@ int main() try
     LineBuffer lineBuffer = create_index_buffer(grid_edges, edge_colors, window, allocator);
 
 
-    MeshBuffer meshBuffer = create_mesh_buffer(reconstructedSurface, window, allocator);
 
 
     std::vector<PointBuffer> pBuffer;
@@ -293,7 +292,11 @@ int main() try
     lBuffer.push_back(std::move(lineBuffer));
 
     std::vector<MeshBuffer> mBuffer;
-    mBuffer.push_back(std::move(meshBuffer));
+    if(!reconstructedSurface.positions.empty()) { // Do not create an empty buffer - this will produce an error.
+        MeshBuffer meshBuffer = create_mesh_buffer(reconstructedSurface, window, allocator);
+        MeshBuffer cube_triangles = create_mesh_buffer(reconstructedSurface, window, allocator);
+        mBuffer.push_back(std::move(cube_triangles));
+    }
 #endif
 
 
