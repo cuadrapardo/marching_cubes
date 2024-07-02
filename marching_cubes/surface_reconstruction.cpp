@@ -85,12 +85,14 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
         return i * (grid_boxes.y + 2) * (grid_boxes.z + 2) + j * (grid_boxes.z + 2) + k;
     }; // note this will only work in a loop structured like the one below
 
-    for (unsigned int i = 0; i <= grid_boxes.x + 1 ; i++) {
-        for(unsigned int j = 0; j <= grid_boxes.y + 1; j++) {
-            for(unsigned int k = 0; k <= grid_boxes.z + 1; k++) {
+    for (unsigned int i = 0; i <= grid_boxes.x ; i++) {
+        for(unsigned int j = 0; j <= grid_boxes.y; j++) {
+            for(unsigned int k = 0; k <= grid_boxes.z; k++) {
                 //Get cube vertices
                 unsigned int vertex_values[8];
                 unsigned int vertex_idx[8];
+
+
 
                 vertex_idx[0] = get_index(i, j, k);
                 vertex_idx[1] = get_index(i, j, k+1);
@@ -100,6 +102,16 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
                 vertex_idx[5] = get_index(i+1, j, k+1);
                 vertex_idx[6] = get_index(i+1, j+1, k);
                 vertex_idx[7] = get_index(i+1, j+1, k+1);
+
+//
+//                vertex_idx[0] = get_index(i, j, k);
+//                vertex_idx[1] = get_index(i, j+1, k);
+//                vertex_idx[2] = get_index(i, j, k+1);
+//                vertex_idx[3] = get_index(i, j+1, k+1);
+//                vertex_idx[4] = get_index(i+1, j, k);
+//                vertex_idx[5] = get_index(i+1, j+1, k);
+//                vertex_idx[6] = get_index(i+1, j, k+1);
+//                vertex_idx[7] = get_index(i+1, j+1, k+1);
 
                 vertex_values[0] = grid_values[vertex_idx[0]];
                 vertex_values[1] = grid_values[vertex_idx[1]];
@@ -116,9 +128,7 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
                 unsigned int triangle_n = case_entry[0]; //Number of triangles generated in this case
                 if(triangle_n == 0) continue; //Ignore cases which do not generate triangles - ie all positive or negative vertices
 
-                unsigned int triplet_count = 1;
-
-                for(unsigned int triplet = 0; triplet < triangle_n*3; triplet += 3) {
+                for(unsigned int triplet_count = 1; triplet_count < triangle_n*3; triplet_count += 3) {
                     //Lookup edge vertices in table
                     int triangle_edges[3] = {case_entry[triplet_count],
                                              case_entry[triplet_count+1],
@@ -139,6 +149,8 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
                     unsigned int const& edge_2_vertex_0_idx = vertex_idx[edge_2[0]];
                     unsigned int const& edge_2_vertex_1_idx = vertex_idx[edge_2[1]];
 
+                    //Issue that the grid values are not values as in scalar field but their classification
+                    //TODO: pass in scalar value to linear_interpolation
                     glm::vec3 vertex_0 = linear_interpolation(grid_positions[edge_0_vertex_0_idx], grid_positions[edge_0_vertex_1_idx],
                                          grid_values[edge_0_vertex_0_idx], grid_values[edge_0_vertex_1_idx], isovalue);
 
