@@ -269,7 +269,7 @@ int main() try
 
     //Create marching cubes surface IMPORTANT : UNTESTED
     Mesh reconstructedSurface;
-    reconstructedSurface.positions = query_case_table(vertex_classification, distanceField.positions, ui_config.grid_resolution,
+    reconstructedSurface.positions = query_case_table(vertex_classification, distanceField.positions, distanceField.point_size, ui_config.grid_resolution,
                                                       pointCloudBBox, ui_config.isovalue);
     reconstructedSurface.set_color(glm::vec3{1.0f, 0.5f, 0.0f});
     reconstructedSurface.set_normals(glm::vec3(1.0f,0,0));

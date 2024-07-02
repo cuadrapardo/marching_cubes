@@ -66,8 +66,9 @@ glm::vec3 linear_interpolation(glm::vec3 const& point_1, glm::vec3 const& point_
 /* The diagram refers to the layout desribed in mc_tables.h
  * Given the grid values ( 0 or 1 - negative or positive), iterate and for each cube find its case.
  * Returns a vector of points where each triple(3) of vec3s define a triangle */
-std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_values, std::vector<glm::vec3> const& grid_positions,
-                      float const& grid_resolution, BoundingBox const& model_bbox, float const& input_isovalue) {
+std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_classification,  std::vector<glm::vec3> const& grid_positions,
+                                        std::vector<int> const& grid_scalar_values, float const& grid_resolution, BoundingBox const& model_bbox,
+                                        float const& input_isovalue) {
     std::vector<glm::vec3> reconstructed_mesh;
      float isovalue = input_isovalue + 0.5; //TODO: SHIFT IT ELSEWHERE NOT HERE.
     //TODO: double check -  are grid values in the same order as vertex index ? are they indexed 1 to 1 ?
@@ -113,14 +114,14 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
 //                vertex_idx[6] = get_index(i+1, j, k+1);
 //                vertex_idx[7] = get_index(i+1, j+1, k+1);
 
-                vertex_values[0] = grid_values[vertex_idx[0]];
-                vertex_values[1] = grid_values[vertex_idx[1]];
-                vertex_values[2] = grid_values[vertex_idx[2]];
-                vertex_values[3] = grid_values[vertex_idx[3]];
-                vertex_values[4] = grid_values[vertex_idx[4]];
-                vertex_values[5] = grid_values[vertex_idx[5]];
-                vertex_values[6] = grid_values[vertex_idx[6]];
-                vertex_values[7] = grid_values[vertex_idx[7]];
+                vertex_values[0] = grid_classification[vertex_idx[0]];
+                vertex_values[1] = grid_classification[vertex_idx[1]];
+                vertex_values[2] = grid_classification[vertex_idx[2]];
+                vertex_values[3] = grid_classification[vertex_idx[3]];
+                vertex_values[4] = grid_classification[vertex_idx[4]];
+                vertex_values[5] = grid_classification[vertex_idx[5]];
+                vertex_values[6] = grid_classification[vertex_idx[6]];
+                vertex_values[7] = grid_classification[vertex_idx[7]];
 
                 unsigned int case_index = get_case(vertex_values);
                 int case_entry[17];
@@ -152,13 +153,13 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_va
                     //Issue that the grid values are not values as in scalar field but their classification
                     //TODO: pass in scalar value to linear_interpolation
                     glm::vec3 vertex_0 = linear_interpolation(grid_positions[edge_0_vertex_0_idx], grid_positions[edge_0_vertex_1_idx],
-                                         grid_values[edge_0_vertex_0_idx], grid_values[edge_0_vertex_1_idx], isovalue);
+                                         grid_scalar_values[edge_0_vertex_0_idx], grid_scalar_values[edge_0_vertex_1_idx], isovalue);
 
                     glm::vec3 vertex_1 = linear_interpolation(grid_positions[edge_1_vertex_0_idx], grid_positions[edge_1_vertex_1_idx],
-                                                              grid_values[edge_1_vertex_0_idx], grid_values[edge_1_vertex_1_idx], isovalue);
+                                                              grid_scalar_values[edge_1_vertex_0_idx], grid_scalar_values[edge_1_vertex_1_idx], isovalue);
 
                     glm::vec3 vertex_2 = linear_interpolation(grid_positions[edge_2_vertex_0_idx], grid_positions[edge_2_vertex_1_idx],
-                                                              grid_values[edge_2_vertex_0_idx], grid_values[edge_2_vertex_1_idx],  isovalue);
+                                                              grid_scalar_values[edge_2_vertex_0_idx], grid_scalar_values[edge_2_vertex_1_idx],  isovalue);
                     reconstructed_mesh.push_back(vertex_0); // ??? winding order????!
                     reconstructed_mesh.push_back(vertex_1);
                     reconstructed_mesh.push_back(vertex_2);
@@ -203,6 +204,7 @@ std::vector<glm::vec3> query_case_table_test(std::vector<unsigned int> const& gr
     }
 
     unsigned int triplet_count = 1;
+    //TODO: fix loop as in query_case_table
     for (unsigned int triplet = 0; triplet < triangle_n; triplet++) {
         //Lookup edge vertices in table
         int triangle_edges[3] = {case_entry[triplet_count],

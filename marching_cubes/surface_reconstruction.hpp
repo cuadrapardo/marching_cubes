@@ -17,7 +17,7 @@ glm::vec3 linear_interpolation(glm::vec3 const& point_1, glm::vec3 const& point_
                                unsigned int const& scalar_1, unsigned int const& scalar_2, float const& isovalue);
 
 std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_values, std::vector<glm::vec3> const& grid_positions,
-                                        float const& grid_resolution, BoundingBox const& model_bbox, float const& input_isovalue);
+                                        std::vector<int> const& grid_scalar_values, float const& grid_resolution, BoundingBox const& model_bbox, float const& input_isovalue);
 
 std::vector<glm::vec3> query_case_table_test(std::vector<unsigned int> const& grid_values, std::vector<glm::vec3> const& grid_positions,
                                              float const& input_isovalue);
