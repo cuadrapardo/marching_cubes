@@ -70,8 +70,7 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_cl
                                         std::vector<int> const& grid_scalar_values, float const& grid_resolution, BoundingBox const& model_bbox,
                                         float const& input_isovalue) {
     std::vector<glm::vec3> reconstructed_mesh;
-     float isovalue = input_isovalue + 0.5; //TODO: SHIFT IT ELSEWHERE NOT HERE.
-    //TODO: double check -  are grid values in the same order as vertex index ? are they indexed 1 to 1 ?
+     float isovalue = input_isovalue + 0.5; //TODO: Might be nicer to shift this elsewhere.
     std::cout << "Classifying all cubes in the grid" << std::endl;
     glm::vec3 extents = glm::abs(model_bbox.max - model_bbox.min);
     float scale = 1.0f / grid_resolution;
@@ -93,26 +92,14 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_cl
                 unsigned int vertex_values[8];
                 unsigned int vertex_idx[8];
 
-
-
                 vertex_idx[0] = get_index(i, j, k);
-                vertex_idx[1] = get_index(i, j, k+1);
-                vertex_idx[2] = get_index(i, j+1, k);
+                vertex_idx[1] = get_index(i, j+1, k);
+                vertex_idx[2] = get_index(i, j, k+1);
                 vertex_idx[3] = get_index(i, j+1, k+1);
                 vertex_idx[4] = get_index(i+1, j, k);
-                vertex_idx[5] = get_index(i+1, j, k+1);
-                vertex_idx[6] = get_index(i+1, j+1, k);
+                vertex_idx[5] = get_index(i+1, j+1, k);
+                vertex_idx[6] = get_index(i+1, j, k+1);
                 vertex_idx[7] = get_index(i+1, j+1, k+1);
-
-//
-//                vertex_idx[0] = get_index(i, j, k);
-//                vertex_idx[1] = get_index(i, j+1, k);
-//                vertex_idx[2] = get_index(i, j, k+1);
-//                vertex_idx[3] = get_index(i, j+1, k+1);
-//                vertex_idx[4] = get_index(i+1, j, k);
-//                vertex_idx[5] = get_index(i+1, j+1, k);
-//                vertex_idx[6] = get_index(i+1, j, k+1);
-//                vertex_idx[7] = get_index(i+1, j+1, k+1);
 
                 vertex_values[0] = grid_classification[vertex_idx[0]];
                 vertex_values[1] = grid_classification[vertex_idx[1]];
@@ -150,8 +137,6 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_cl
                     unsigned int const& edge_2_vertex_0_idx = vertex_idx[edge_2[0]];
                     unsigned int const& edge_2_vertex_1_idx = vertex_idx[edge_2[1]];
 
-                    //Issue that the grid values are not values as in scalar field but their classification
-                    //TODO: pass in scalar value to linear_interpolation
                     glm::vec3 vertex_0 = linear_interpolation(grid_positions[edge_0_vertex_0_idx], grid_positions[edge_0_vertex_1_idx],
                                          grid_scalar_values[edge_0_vertex_0_idx], grid_scalar_values[edge_0_vertex_1_idx], isovalue);
 
@@ -160,7 +145,7 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_cl
 
                     glm::vec3 vertex_2 = linear_interpolation(grid_positions[edge_2_vertex_0_idx], grid_positions[edge_2_vertex_1_idx],
                                                               grid_scalar_values[edge_2_vertex_0_idx], grid_scalar_values[edge_2_vertex_1_idx],  isovalue);
-                    reconstructed_mesh.push_back(vertex_0); // ??? winding order????!
+                    reconstructed_mesh.push_back(vertex_0);
                     reconstructed_mesh.push_back(vertex_1);
                     reconstructed_mesh.push_back(vertex_2);
 
