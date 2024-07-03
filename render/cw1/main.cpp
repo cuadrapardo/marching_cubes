@@ -257,8 +257,7 @@ int main() try
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
 
     // Extend the bounding box by one cell size in each direction to avoid edge cases
-    pointCloudBBox.max = pointCloudBBox.max + glm::vec3(1.0f/ui_config.grid_resolution); // Issue: I think this needs to be done more systematically.
-    pointCloudBBox.min = pointCloudBBox.min - glm::vec3(1.0f/ui_config.grid_resolution);
+    pointCloudBBox.add_padding(); //TODO: be able to modify padding
 
     distanceField.positions = create_regular_grid(ui_config.grid_resolution, grid_edges, pointCloudBBox);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);

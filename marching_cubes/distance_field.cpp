@@ -219,3 +219,20 @@ std::pair<std::vector<unsigned int>, std::vector<glm::vec3>> classify_grid_edges
     }
     return std::make_pair(edge_values, edge_colors);
 }
+
+/* In order to ensure that the surface created actually encompasses the model, the bounding box needs to be
+ * big enough. This increments each axis by 500% of the input bounding box's size on each axis*/
+void BoundingBox::add_padding() {
+//    float x_extent = max.x - min.x;
+//    float y_extent = max.y - min.y;
+//    float z_extent = max.z - min.z;
+
+    glm::vec3 extent = max - min;
+
+    // 500% increment
+    glm::vec3 increment = (5.0f * extent);
+
+    max = max + increment;
+    min = min - increment;
+
+}

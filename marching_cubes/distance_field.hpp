@@ -15,6 +15,8 @@
 struct BoundingBox {
     glm::vec3 min;
     glm::vec3 max;
+
+    void add_padding();
 };
 
 
