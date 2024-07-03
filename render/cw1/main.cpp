@@ -57,6 +57,7 @@ namespace lut = labutils;
 
 #include "simple_model.hpp"
 #include "load_model.hpp"
+#include "output_model.hpp"
 #include "point_cloud.hpp"
 #include "mesh.hpp"
 #include "../../marching_cubes/surface_reconstruction.hpp"
@@ -412,7 +413,7 @@ int main() try
         ImGui::SliderFloat("Grid Resolution",&ui_config.grid_resolution, ui_config.grid_resolution_min, ui_config.grid_resolution_max);
         ImGui::InputInt("Isovalue", &ui_config.isovalue);
         if (ImGui::Button("Output to file")) {
-            //TODO: Add output to file function here.
+            write_OBJ(reconstructedSurface.positions, cfg::torusTri);
         }
         if (ImGui::Button("Recalculate")) {
             // Wait for GPU to finish processing
