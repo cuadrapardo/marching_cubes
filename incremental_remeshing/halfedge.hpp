@@ -14,11 +14,11 @@ struct HalfEdgeMesh {
     // Vertex information
     std::vector<glm::vec3> vertex_positions;
     std::vector<glm::vec3> vertex_normals;
-    std::vector<int> vertex_outgoing_halfedge;
+    std::vector<int> vertex_outgoing_halfedge; // aka. first directed edge
 
     // Halfedge information
 //    std::vector<int> halfedges;
-    std::vector<int> halfedges_opposite;
+    std::vector<int> halfedges_opposite; //aka. other halves
     std::vector<int> halfedges_vertex_to;
 
     std::vector<unsigned int> faces; // Every 3 entries is a face.

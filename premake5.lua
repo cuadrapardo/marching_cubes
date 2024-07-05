@@ -80,6 +80,7 @@ project "cw1"
 	links "labutils"
 	links "marching-cubes"
 	links "marching-cubes-test"
+	links "incremental_remeshing"
 	links "x-volk"
 	links "x-stb"
 	links "x-glfw"
@@ -140,6 +141,19 @@ project "marching-cubes-test"
 
 	kind "StaticLib"
 	location "marching_cubes_test"
+
+	files( sources )
+
+
+project "incremental_remeshing"
+	local sources = {
+		"incremental_remeshing/**.cpp",
+		"incremental_remeshing/**.hpp",
+		"incremental_remeshing/**.hxx"
+	}
+
+	kind "StaticLib"
+	location "incremental_remeshing"
 
 	files( sources )
 

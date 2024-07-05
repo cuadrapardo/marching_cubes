@@ -155,10 +155,10 @@ std::pair<std::vector<unsigned int>, std::vector<glm::vec3>> classify_grid_edges
     auto get_edge_color = [](unsigned int value) -> glm::vec3 {
         switch (value) {
             case 0: //Negative
-                return glm::vec3{1.0f, 0.f, 0.f};
+                return glm::vec3{0.0f, 0.f, 0.f};
                 break;
             case 1: //Positive
-                return glm::vec3{0.0f, 1.0f, 0.f};
+                return glm::vec3{1.0f, 1.0f, 1.0f};
                 break;
             case 2: //Bipolar
                 return glm::vec3{1.0f, 0.f, 1.0f};

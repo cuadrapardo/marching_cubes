@@ -9,10 +9,11 @@
 #include <sstream>
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 
 
 
-int get_next_halfedge(unsigned int const& halfedge_idx) {
+int HalfEdgeMesh::get_next_halfedge(unsigned int const& halfedge_idx) {
     //Get index of face
     unsigned int face_idx = halfedge_idx / 3;
     unsigned int idx_within_face = halfedge_idx % 3;
@@ -31,7 +32,7 @@ int get_next_halfedge(unsigned int const& halfedge_idx) {
     return -1; // Invalid
 }
 
-int get_previous_halfedge(unsigned int const& halfedge_idx) {
+int HalfEdgeMesh::get_previous_halfedge(unsigned int const& halfedge_idx) {
     //Get index of face
     unsigned int face_idx = halfedge_idx / 3;
     unsigned int idx_within_face = halfedge_idx % 3;
@@ -51,7 +52,7 @@ int get_previous_halfedge(unsigned int const& halfedge_idx) {
 }
 
 // Given a face index, returns the indices to its 3 halfedges.
-std::array<int, 3> get_halfedges(unsigned int const& face_idx) {
+std::array<int, 3> HalfEdgeMesh::get_halfedges(unsigned int const& face_idx) {
     std::array<int, 3> face_halfedges;
 
     face_halfedges[0] = 3 * face_idx;
@@ -71,13 +72,39 @@ void HalfEdgeMesh::set_other_halves() {
         std::array<int, 3> halfedges = get_halfedges(face_idx);
 
         //For each halfedge, find its other half i.e - the half edge in the opposite direction
-        //TODO: unfinished
+        /* The goal here is to find an edge that has the following: Given a halfedge edge E whose other half OE we are trying to find:
+         * -----> E's previous halfedge in the triangle will point TOWARDS E's FROM vertex.
+         *        Therefore:  ----> OE must point TOWARDS E's previous halfedge
+         * -----> The vertex E is pointing TOWARDS must be the same vertex OE's previous edge is pointing towards
+         *  We can successfully find a halfedge's other half by finding the edge that fulfills these requirements */
+
+        for(auto& halfedge : halfedges ) {
+            int previous_he = get_previous_halfedge(halfedge);
+            int vertex_from = halfedges_vertex_to[previous_he];
 
 
+            //Find all edges that point towards previous vertex
+            auto it = halfedges_vertex_to.begin();
+
+            while (it != halfedges_vertex_to.end()) {
+                it = std::find(it, halfedges_vertex_to.end(), vertex_from );
+                unsigned int candidate_he = (std::distance(halfedges_vertex_to.begin(), it));
+                //Check if this candidate halfedge is actually the other half
+                int candidate_he_previous_he = get_previous_halfedge(candidate_he);
+                int candidate_he_vertex_from = halfedges_vertex_to[candidate_he_previous_he];
+
+                int vertex_to_halfedge = halfedges_vertex_to[halfedge];
+                int vertex_to_candidate = halfedges_vertex_to[candidate_he];
+                if(candidate_he_vertex_from == vertex_to_halfedge && vertex_from == vertex_to_candidate) {
+                // Found other half
+                     halfedges_opposite[halfedge] = candidate_he;
+                    break;
+                    }
+                   ++it; // Move past the current found item
+                }
+        }
         face_idx++;
     }
-
-
 }
 
 
@@ -119,7 +146,6 @@ HalfEdgeMesh obj_to_halfedge(char const* file_path) {
                     }
                     );
         } else if (token == "f") { // Faces
-            std::vector<int> face_indices;
             std::string vertex;
             while (iss >> vertex) {
                 std::istringstream vertex_idx_stream(vertex);
@@ -129,9 +155,9 @@ HalfEdgeMesh obj_to_halfedge(char const* file_path) {
             }
 
             // For each face, create 3 halfedges.
-            unsigned int idx_2 = face_indices.size() - 1;
-            unsigned int idx_1 = face_indices.size() - 2;
-            unsigned int idx_0 = face_indices.size() - 3;
+            unsigned int idx_2 = mesh.faces[ mesh.faces.size() - 1];
+            unsigned int idx_1 = mesh.faces[mesh.faces.size() - 2];
+            unsigned int idx_0 = mesh.faces[ mesh.faces.size() - 3];
 
             // HalfEdge 0 - From vertex 0 to vertex 1
             mesh.halfedges_opposite.push_back(-1);

@@ -175,7 +175,7 @@ std::vector<glm::vec3> query_case_table_test(std::vector<unsigned int> const& gr
     vertex_values[5] = grid_values[5];
     vertex_values[6] = grid_values[6];
     vertex_values[7] = grid_values[7];
-    //!!! CORRECT UP TO HERE
+
     unsigned int case_index = get_case(vertex_values);
     int case_entry[17];
     std::copy(std::begin(triangleTable[case_index]), std::end(triangleTable[case_index]),
@@ -188,9 +188,7 @@ std::vector<glm::vec3> query_case_table_test(std::vector<unsigned int> const& gr
         return reconstructed_mesh;
     }
 
-    unsigned int triplet_count = 1;
-    //TODO: fix loop as in query_case_table
-    for (unsigned int triplet = 0; triplet < triangle_n; triplet++) {
+    for (unsigned int triplet_count = 1 ;triplet_count < triangle_n*3; triplet_count += 3) {
         //Lookup edge vertices in table
         int triangle_edges[3] = {case_entry[triplet_count],
                                  case_entry[triplet_count + 1],
@@ -223,7 +221,6 @@ std::vector<glm::vec3> query_case_table_test(std::vector<unsigned int> const& gr
         reconstructed_mesh.push_back(vertex_1);
         reconstructed_mesh.push_back(vertex_2);
 
-        triplet_count += 3;
     }
     return reconstructed_mesh;
 }

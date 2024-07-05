@@ -8,7 +8,7 @@
 #define OFF 0
 #define ON 1
 
-#define TEST_MODE OFF
+#define TEST_MODE ON
 
 
 #if TEST_MODE == ON
@@ -83,6 +83,8 @@ namespace cfg
 #       define MODELDIR_ "assets/cw1/"
     constexpr char const* sponzaObj = MODELDIR_ "sponza_with_ship.obj";
     constexpr char const* torusTri = MODELDIR_ "cube.tri";
+    constexpr char const* cubeOBJ = MODELDIR_ "cube.obj";
+
 #       undef MODELDIR_
 
 

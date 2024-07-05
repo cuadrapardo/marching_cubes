@@ -42,25 +42,27 @@ PointCloud create_test_scene() {
     return cube;
 }
 
-/* Classifies edges as positive, bipolar, negative , depending on the value at the endpoints */
+/* Classifies edges as positive, bipolar, negative , depending on the value at the endpoints. TODO: fixme, right now all edges are black */
 std::pair<std::vector<unsigned int>, std::vector<glm::vec3>> classify_cube_edges(std::vector<unsigned int> const& edge_indices,
         std::vector<unsigned int> const& vertex_values) {
     std::vector<glm::vec3> color;
     std::vector<unsigned int> edge_value;
-    for(unsigned int edge = 0; edge < edge_indices.size(); edge+=2) {
-        if(vertex_values[edge_indices[edge]] == 0 && vertex_values[edge_indices[edge+1]] == 0) {
-            color.push_back(glm::vec3{0,0,0});
+    for(unsigned int edge = 0; edge < edge_indices.size(); edge++) {
+        unsigned int v_0 = edge_indices[edge];
+        unsigned int v_1 = edge_indices[edge+1];
+        if(vertex_values[v_0] == 0 && vertex_values[v_1] == 0) {
+            color.push_back(glm::vec3{0.1,0.01,0.44});
             edge_value.push_back(0);
         }
 
-        if(vertex_values[edge_indices[edge]] == 1 && vertex_values[edge_indices[edge+1]] == 1) {
-            color.push_back(glm::vec3{1,1,1});
+        if(vertex_values[v_0] == 1 && vertex_values[v_1] == 1) {
+            color.push_back(glm::vec3{0.1,0.01,0.44});
             edge_value.push_back(1);
         }
 
-        if(vertex_values[edge_indices[edge]] == 1 && vertex_values[edge_indices[edge+1]] == 0 ||
-        vertex_values[edge_indices[edge]] == 0 && vertex_values[edge_indices[edge+1]] == 1) {
-            color.push_back(glm::vec3{0.5,0,0.5});
+        if(vertex_values[v_0] == 1 && vertex_values[v_1 ] == 0 ||
+        vertex_values[v_0] == 0 && vertex_values[v_1] == 1) {
+            color.push_back(glm::vec3{0.1,0.01,0.44});
             edge_value.push_back(2);
         }
     }
@@ -126,19 +128,26 @@ std::vector<unsigned int> get_test_scene_edges() {
 
 
 /* Recalculate the test scene by changing the colours depending on the vertex values,
- * and recalculate the MC surface created.ISSUE: this does NOT work as intended. It will crash with certain combinations
- * TODO: FIXME*/
+ * and recalculate the MC surface created. */
 void recalculate_test_scene(PointCloud& cube, Mesh& triangles, std::vector<unsigned int> const& cube_edges, std::vector<unsigned int> const& vertex_values,
                             std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lBuffer, std::vector<MeshBuffer>& mBuffer,
                             labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
     triangles.positions.clear();
     triangles.normals.clear();
 
+
     //Recalculate vertex colors
     for(unsigned int vertex = 0; vertex < 8 ; vertex++) {
         cube.colors[vertex] = (vertex_values[vertex] == 0) ? glm::vec3{0,0,0} : glm::vec3{1,1,1};
     }
-    auto [cube_edge_values, cube_edge_colors] = classify_cube_edges(cube_edges, vertex_values );
+
+    //Recalculate edge colors
+    auto [cube_edge_values, cube_edge_colors] = classify_cube_edges(cube_edges, vertex_values);
+//    std::vector<glm::vec3> cube_edge_colors;
+//    for (int i = 0; i < ; +i) {
+//
+//    }
+
     //Create buffers for rendering
     PointBuffer cubeBuffer = create_pointcloud_buffers(cube.positions, cube.colors, cube.point_size,
                                                        window, allocator);
@@ -150,15 +159,10 @@ void recalculate_test_scene(PointCloud& cube, Mesh& triangles, std::vector<unsig
     case_triangles.set_normals(glm::vec3{1, 1, 0});
     case_triangles.set_color(glm::vec3{1, 0, 0});
 
-
     if(!case_triangles.positions.empty()) { // Do not create an empty buffer - this will produce an error.
-        //Check if there is a buffer already - if so, destroy it.
         if(mBuffer.size() > 0) {
-            //Destroy buffers. In the case of the test scene, the buffers will not change size for points and lines (since we don't change the resolution)
+            // Destroy buffers. In the case of the test scene, the buffers will not change size for points and lines (since we don't change the resolution)
             // A better approach would be to simply swap the values in the buffers.
-            vmaDestroyBuffer(allocator.allocator, mBuffer[0].positions.buffer, mBuffer[0].positions.allocation);
-            vmaDestroyBuffer(allocator.allocator, mBuffer[0].colors.buffer, mBuffer[0].colors.allocation);
-            vmaDestroyBuffer(allocator.allocator, mBuffer[0].normals.buffer, mBuffer[0].normals.allocation);
             mBuffer[0].vertexCount = 0;
             MeshBuffer test_b = create_mesh_buffer(case_triangles, window, allocator);
             mBuffer[0] = std::move(test_b);
@@ -166,6 +170,8 @@ void recalculate_test_scene(PointCloud& cube, Mesh& triangles, std::vector<unsig
             MeshBuffer test_b = create_mesh_buffer(case_triangles, window, allocator);
             mBuffer.push_back(std::move(test_b));
         }
+    } else {
+        mBuffer[0].vertexCount = 0;
     }
 
     pBuffer[0] = (std::move(cubeBuffer));

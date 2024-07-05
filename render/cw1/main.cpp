@@ -63,6 +63,7 @@ namespace lut = labutils;
 #include "../../marching_cubes/surface_reconstruction.hpp"
 #include "../../marching_cubes/distance_field.hpp"
 #include "../../marching_cubes_test/test_scene.hpp"
+#include "../../incremental_remeshing/halfedge.hpp"
 
 #if TEST_MODE == ON
     /* The test mode is designed so the user can have an interface where they can choose what vertices are positive/negative
@@ -254,6 +255,10 @@ int main() try
     BoundingBox pointCloudBBox = get_bounding_box(pointCloud.positions);
     //TODO: set camera centre as centre of point cloud.
 
+    //TEST ??? incremental_remeshing
+//    HalfEdgeMesh a = obj_to_halfedge(cfg::cubeOBJ);
+
+
     PointCloud distanceField; //(grid)
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
 
@@ -267,7 +272,7 @@ int main() try
 
     auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, pointCloudBBox, ui_config.grid_resolution);
 
-    //Create marching cubes surface IMPORTANT : UNTESTED
+    //Create marching cubes surface
     Mesh reconstructedSurface;
     reconstructedSurface.positions = query_case_table(vertex_classification, distanceField.positions, distanceField.point_size, ui_config.grid_resolution,
                                                       pointCloudBBox, ui_config.isovalue);
@@ -280,9 +285,6 @@ int main() try
     PointBuffer gridBuffer = create_pointcloud_buffers(distanceField.positions, distanceField.colors, distanceField.point_size,
                                                        window, allocator);
     LineBuffer lineBuffer = create_index_buffer(grid_edges, edge_colors, window, allocator);
-
-
-
 
     std::vector<PointBuffer> pBuffer;
     pBuffer.push_back(std::move(pointCloudBuffer));

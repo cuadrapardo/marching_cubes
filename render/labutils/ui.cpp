@@ -46,13 +46,8 @@ void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
 
     // TODO: Double buffer solution for a more seamless experience
-    std::cout << "Destroying buffers. The window will freeze" << std::endl;
-     vmaDestroyBuffer(allocator.allocator, pBuffer[1].color.buffer, pBuffer[1].color.allocation);
-     vmaDestroyBuffer(allocator.allocator, pBuffer[1].positions.buffer, pBuffer[1].positions.allocation);
-     vmaDestroyBuffer(allocator.allocator, pBuffer[1].scale.buffer, pBuffer[1].scale.allocation);
+    std::cout << "Destroying buffers. The window might freeze" << std::endl;
      pBuffer[1].vertex_count = 0;
-     vmaDestroyBuffer(allocator.allocator, lineBuffer[0].color.buffer, lineBuffer[0].color.allocation);
-     vmaDestroyBuffer(allocator.allocator, lineBuffer[0].indices.buffer, lineBuffer[0].indices.allocation);
      lineBuffer[0].vertex_count = 0;
 
     glm::vec3 extents = glm::abs(bbox.max - bbox.min);
