@@ -178,8 +178,8 @@ MeshBuffer create_mesh_buffer(Mesh const& mesh, labutils::VulkanContext const& w
 
     return MeshBuffer {
             std::move(vertexPosGPU),
-            std::move(vertexNormalsGPU),
             std::move(vertexColGPU),
+            std::move(vertexNormalsGPU),
             static_cast<uint32_t>(mesh.positions.size())
     };
 }

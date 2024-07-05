@@ -8,6 +8,7 @@
 #include "error.hpp"
 #include "../../third_party/glm/include/glm/glm.hpp"
 
+#include "../../marching_cubes/surface_reconstruction.hpp"
 
 
 namespace ui {
@@ -40,10 +41,13 @@ namespace ui {
  * Populates same buffers that were deleted with updated ones
  * As this is not using a double buffer, the window will */
 //TODO: Create recalculate point cloud. Maybe will be useful to resize point size- this is secondary.
-void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
+void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, Mesh& triangles,
                       UiConfiguration const& ui_config, BoundingBox& bbox,
-                      std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer,
+                      std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer, std::vector<MeshBuffer>& mBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
+
+    triangles.positions.clear();
+    triangles.normals.clear();
 
     // TODO: Double buffer solution for a more seamless experience
     std::cout << "Destroying buffers. The window might freeze" << std::endl;
@@ -67,6 +71,28 @@ void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     std::vector<unsigned int> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
     distanceField.set_color(vertex_classification);
+
+    Mesh case_triangles;
+    case_triangles.positions =  query_case_table(vertex_classification,  distanceField.positions,
+            distanceField.point_size, ui_config.grid_resolution, bbox, ui_config.isovalue);
+
+    case_triangles.set_normals(glm::vec3{1, 1.0, 0});
+    case_triangles.set_color(glm::vec3{1, 0, 0});
+
+    if(!case_triangles.positions.empty()) { // Do not create an empty buffer - this will produce an error.
+        if(mBuffer.size() > 0) {
+            // Destroy buffers. In the case of the test scene, the buffers will not change size for points and lines (since we don't change the resolution)
+            // A better approach would be to simply swap the values in the buffers.
+            mBuffer[0].vertexCount = 0;
+            MeshBuffer mesh = create_mesh_buffer(case_triangles, window, allocator);
+            mBuffer[0] = std::move(mesh);
+        } else {
+            MeshBuffer test_b = create_mesh_buffer(case_triangles, window, allocator);
+            mBuffer.push_back(std::move(test_b));
+        }
+    } else {
+        mBuffer[0].vertexCount = 0;
+    }
 
     auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, bbox, ui_config.grid_resolution);
 

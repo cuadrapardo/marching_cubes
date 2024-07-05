@@ -255,7 +255,7 @@ int main() try
     BoundingBox pointCloudBBox = get_bounding_box(pointCloud.positions);
     //TODO: set camera centre as centre of point cloud.
 
-    //TEST ??? incremental_remeshing
+    //Incremental_remeshing
 //    HalfEdgeMesh a = obj_to_halfedge(cfg::cubeOBJ);
 
 
@@ -276,8 +276,8 @@ int main() try
     Mesh reconstructedSurface;
     reconstructedSurface.positions = query_case_table(vertex_classification, distanceField.positions, distanceField.point_size, ui_config.grid_resolution,
                                                       pointCloudBBox, ui_config.isovalue);
-    reconstructedSurface.set_color(glm::vec3{1.0f, 0.5f, 0.0f});
-    reconstructedSurface.set_normals(glm::vec3(1.0f,0,0));
+    reconstructedSurface.set_color(glm::vec3{1.0f, 0.0f, 0.0f});
+    reconstructedSurface.set_normals(glm::vec3(1.0f,1.0,0)); //TODO: calculate normals
 
     //Create buffers for rendering
     PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
@@ -295,7 +295,6 @@ int main() try
 
     std::vector<MeshBuffer> mBuffer;
     if(!reconstructedSurface.positions.empty()) { // Do not create an empty buffer - this will produce an error.
-        MeshBuffer meshBuffer = create_mesh_buffer(reconstructedSurface, window, allocator);
         MeshBuffer cube_triangles = create_mesh_buffer(reconstructedSurface, window, allocator);
         mBuffer.push_back(std::move(cube_triangles));
     }
@@ -423,8 +422,9 @@ int main() try
 
             std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
 
-            recalculate_grid(pointCloud, distanceField, ui_config, pointCloudBBox,pBuffer, lBuffer,
+            recalculate_grid(pointCloud, distanceField, reconstructedSurface, ui_config, pointCloudBBox,pBuffer, lBuffer, mBuffer,
                              window, allocator);
+
 
         }
 #else

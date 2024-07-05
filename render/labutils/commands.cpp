@@ -100,7 +100,6 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
         //Bind line drawing pipeline
         vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aLinePipe);
 #if TEST_MODE == ON
-        //Note: points[1] is the grid point buffer
         VkBuffer buffers[2] {points[0].positions.buffer,
                              lineBuffers[0].color.buffer
         };
@@ -128,7 +127,7 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
 
             VkBuffer buffers[3] {meshBuffer.positions.buffer,
                                  meshBuffer.colors.buffer,
-                                 meshBuffer.positions.buffer};
+                                 meshBuffer.normals.buffer};
             VkDeviceSize offsets[3] {};
 
             vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);

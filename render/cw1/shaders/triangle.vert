@@ -11,8 +11,8 @@ layout( set = 0, binding = 0) uniform UScene{
     mat4 projCam;
 } uScene;
 
-layout(location = 0) out vec3 v2fNormal; //v2f- vertex to fragment
-layout(location = 1) out vec3 v2fColor;
+layout(location = 0) out vec3 v2fColor; //v2f- vertex to fragment
+layout(location = 1) out vec3 v2fNormal;
 
 
 void main()

@@ -12,6 +12,7 @@
 #include "vkobject.hpp"
 #include "../cw1/point_cloud.hpp"
 #include "../../marching_cubes/distance_field.hpp"
+#include "../cw1/mesh.hpp"
 
 /* General UI helper functions */
 
@@ -32,9 +33,12 @@ struct UiConfiguration {
 };
 
 // Recalculates grid and scalar values with given UiConfiguration
-void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField,
+void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, Mesh& triangles,
                       UiConfiguration const& ui_config, BoundingBox& bbox,
-                      std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer,
+                      std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer, std::vector<MeshBuffer>& mBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator);
+
+void recalculate_surface(Mesh& triangles, std::vector<unsigned int> const& grid_values, std::vector<glm::vec3> const& grid_positions,
+                         std::vector<int> const& grid_scalar_values, float const& grid_resolution, BoundingBox const& model_bbox, float const& input_isovalue);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_UI_HPP

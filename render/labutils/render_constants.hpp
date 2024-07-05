@@ -8,7 +8,7 @@
 #define OFF 0
 #define ON 1
 
-#define TEST_MODE ON
+#define TEST_MODE OFF
 
 
 #if TEST_MODE == ON
