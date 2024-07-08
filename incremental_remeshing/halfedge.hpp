@@ -17,7 +17,6 @@ struct HalfEdgeMesh {
     std::vector<int> vertex_outgoing_halfedge; // aka. first directed edge
 
     // Halfedge information
-//    std::vector<int> halfedges;
     std::vector<int> halfedges_opposite; //aka. other halves
     std::vector<int> halfedges_vertex_to;
 
@@ -25,11 +24,28 @@ struct HalfEdgeMesh {
 
     void set_other_halves();
 
+    bool check_manifold();
+
 
     // Helper functions
     std::array<int, 3> get_halfedges(unsigned int const& face_idx);
     int get_previous_halfedge(unsigned int const& halfedge);
     int get_next_halfedge(unsigned int const& halfedge);
+
+    //Mesh operations
+    void edge_collapse(unsigned int const& edge_idx);
+    void edge_split(unsigned int const& edge_idx);
+    void edge_flip(unsigned int const& edge_idx);
+
+    //Incremental remeshing operations
+    float get_mean_edge_length();
+    void split_long_edges(const float& high_edge_length);
+    void collapse_short_edges();
+    void equalize_valences();
+    void tangential_relaxation();
+    void project_to_surface();
+
+    void remesh();
 };
 
 HalfEdgeMesh obj_to_halfedge(char const* path);

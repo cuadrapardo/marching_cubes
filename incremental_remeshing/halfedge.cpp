@@ -4,6 +4,8 @@
 
 #include "halfedge.hpp"
 
+#include <glm/glm.hpp>
+
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -181,4 +183,142 @@ HalfEdgeMesh obj_to_halfedge(char const* file_path) {
     obj_file.close();
 
     mesh.set_other_halves();
+}
+
+/* Finds average edge length, useful as a target lentgh for tangential relaxation */
+float HalfEdgeMesh::get_mean_edge_length() {
+    float total_length;
+    for(unsigned int he_idx; he_idx < halfedges_vertex_to.size(); he_idx++){
+        unsigned int previous_he_idx = get_previous_halfedge(he_idx);
+
+        unsigned int vertex_from = halfedges_vertex_to[previous_he_idx];
+        float edge_length = glm::distance(
+                vertex_positions[vertex_from],
+                vertex_positions[halfedges_vertex_to[he_idx]]
+                );
+        total_length += edge_length;
+    }
+    return (total_length / halfedges_vertex_to.size());
+}
+
+bool check_manifold(){
+    //TODO: implement me
+    return 1;
+}
+
+/* Splits edge at its midpoint. Creates 2 new faces, 1 new vertex, and modifies 2 existing faces & their halfedges*/
+void HalfEdgeMesh::edge_split(const unsigned int& he_idx) {
+    // The starting halfedges (he_idx & he_opposite) are the ones on the desired edge to be split.
+
+    // Face 0 - the face which contains he_idx
+    //Halfedge 0
+    unsigned int const he_vertex_to = halfedges_vertex_to[he_idx];
+
+    //Halfedge 1
+    unsigned int const& he_idx_1 = get_next_halfedge(he_idx);
+    unsigned int const& he_idx_1_vertex = halfedges_vertex_to[he_idx_1];
+    unsigned int const he_idx_1_opp = halfedges_opposite[he_idx_1]; // make a copy because this will be modified
+
+
+    //Halfedge 2
+    unsigned int const& he_idx_2 = get_next_halfedge(he_idx_1);
+    unsigned int const& he_idx_2_vertex = halfedges_vertex_to[he_idx_2];
+
+    // Face 1 - the face which contains he_idx's opposite.
+    //Halfedge 0
+    unsigned int const& he_opposite = halfedges_opposite[he_idx];
+    unsigned int he_opp_vertex_to = halfedges_vertex_to[he_opposite];
+
+    //Halfedge 1
+    unsigned int const& he_opp_idx_1 =  get_next_halfedge(he_opposite);
+    unsigned int const& he_opp_1_vertex = halfedges_vertex_to[he_opp_idx_1];
+
+    //Halfedge 2
+    unsigned int const& he_opp_idx_2 =  get_next_halfedge(he_opp_idx_1);
+    unsigned int const& he_opp_2_vertex = halfedges_vertex_to[he_opp_idx_2];
+    unsigned int const he_opp_idx_2_opp = halfedges_opposite[he_opp_idx_2];  // make a copy because this will be modified
+
+
+    // DEBUG checks.
+    assert(he_vertex_to == he_opp_2_vertex);
+    assert(he_opp_vertex_to == he_idx_2_vertex);
+
+    //Insert a vertex at the midpoint of the edge that will be split
+    glm::vec3 pos_1 = vertex_positions[he_vertex_to];
+
+    glm::vec3 pos_2 = vertex_positions[he_opp_vertex_to];
+
+    glm::vec3 midpoint = ( pos_1 + pos2 ) / 2.0f; //position of vertex that splits the edge at midpoint
+
+    // Add vertex to data structure
+    vertex_positions.push_back(midpoint);
+    unsigned int new_vertex_idx = vertex_positions.size() - 1;
+    vertex_outgoing_halfedge.push_back(-1);
+
+    // Add new face - Face 3
+    faces.push_back(new_vertex_idx);
+    faces.push_back(he_vertex_to);
+    faces.push_back(he_idx_1_vertex);
+
+    unsigned int start_he_idx = halfedges_vertex_to.size() - 1;
+
+    //Halfedge 0
+    halfedges_opposite.push_back(start_he_idx + 4); // First he of Face 4
+    halfedges_vertex_to.push_back(he_vertex_to);
+    vertex_outgoing_halfedge[new_vertex_idx] = halfedges_opposite.size() - 1;
+
+    //Halfedge 1
+    halfedges_opposite.push_back(he_idx_1_opp); // Previous he of edge 1, face 0
+    halfedges_vertex_to.push_back(he_idx_1_vertex);
+    vertex_outgoing_halfedge[he_vertex_to] = halfedges_opposite.size() - 1;
+    halfedges_opposite[he_idx_1_opp] = halfedges_opposite.size() - 1; // Append previously existing HE with correct other half.
+
+    //Halfedge 2
+    halfedges_opposite.push_back(he_idx_1);
+    halfedges_vertex_to.push_back(new_vertex_idx);
+    vertex_outgoing_halfedge[he_idx_1_vertex] = halfedges_opposite.size() - 1;
+    halfedges_opposite[he_idx_1] = halfedges_opposite.size() - 1;
+
+    // Add new face - Face 2
+    faces.push_back(he_opp_2_vertex);
+    faces.push_back(new_vertex_idx);
+    faces.push_back(he_opp_1_vertex);
+
+    //Halfedge 0
+    halfedges_opposite.push_back(start_he_idx + 1);
+    halfedges_vertex_to.push_back(new_vertex_idx);
+    vertex_outgoing_halfedge[he_opp_2_vertex] = halfedges_opposite.size() - 1;
+
+    //Halfedge 1
+    halfedges_opposite.push_back(he_opp_idx_2);
+    halfedges_vertex_to.push_back(he_opp_1_vertex);
+    vertex_outgoing_halfedge[new_vertex_idx] = halfedges_opposite.size() - 1;
+    halfedges_opposite[he_opp_idx_2] = halfedges_opposite.size() - 1;
+
+    //Halfedge 2
+    halfedges_opposite.push_back(he_opp_idx_2_opp);
+    halfedges_vertex_to.push_back(he_opp_2_vertex);
+    vertex_outgoing_halfedge[he_opp_1_vertex] = halfedges_opposite.size() - 1;
+    halfedges_opposite[he_opp_idx_2_opp] = halfedges_opposite.size() - 1;
+
+    //Update original faces adjacent to edge with new vertex
+
+    //Face adjacent to he_idx
+    unsigned int face_0 = he_idx / 3; // Adjacent face to he_idx
+    unsigned int face_1 = he_opposite / 3; // Opposite face to he_idx
+    for(unsigned int vertex_idx = 0; vertex_idx < 3; vertex_idx++) {
+        if(faces[(face_0*3)+ vertex_idx] == he_vertex_to) {
+            faces[(face_0*3)+ vertex_idx] = new_vertex_idx;
+        }
+        if(faces[(face_1*3)+ vertex_idx] == he_vertex_to) {
+            faces[(face_1*3)+ vertex_idx] = new_vertex_idx;
+        }
+    }
+    //Update edges of old faces with new vertex to.
+    //Face 0
+    halfedges_vertex_to[he_opp_idx_2] = new_vertex_idx;
+    //Face 1
+    halfedges_vertex_to[he_idx] = new_vertex_idx;
+
+
 }
