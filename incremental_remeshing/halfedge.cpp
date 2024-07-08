@@ -65,6 +65,25 @@ std::array<int, 3> HalfEdgeMesh::get_halfedges(unsigned int const& face_idx) {
 }
 
 
+/* Iterates through one ring and returns vertex indices of those belonging to the given vertex's one ring */
+std::unordered_set<unsigned int> HalfEdgeMesh::get_one_ring_vertices(const unsigned int& vertex_idx) {
+    std::unordered_set<unsigned int> one_ring;
+    //Get first directed edge
+    int const& fde = vertex_outgoing_halfedge[vertex_idx];
+    one_ring.insert(halfedges_vertex_to[fde]);
+    int current_he_idx = get_previous_halfedge(fde);
+    while(fde != current_he_idx) {
+        unsigned int other_half = halfedges_opposite[current_he_idx];
+        if(other_half == fde) {
+            break;
+        }
+        one_ring.insert(halfedges_vertex_to[other_half]);
+        current_he_idx = get_previous_halfedge(other_half);
+    }
+    return one_ring;
+}
+
+
 
 /* For each halfedge, find its other half */
 void HalfEdgeMesh::set_other_halves() {
@@ -112,6 +131,7 @@ void HalfEdgeMesh::set_other_halves() {
 
 /* Reads in an obj and returns a HalfEdgeMesh */
 HalfEdgeMesh obj_to_halfedge(char const* file_path) {
+    //TODO: check for boundary to generalise
     HalfEdgeMesh mesh;
     std::ifstream obj_file(file_path);
     if (!obj_file.is_open()) {
@@ -201,10 +221,33 @@ float HalfEdgeMesh::get_mean_edge_length() {
     return (total_length / halfedges_vertex_to.size());
 }
 
-bool check_manifold(){
-    //TODO: implement me
+/* Checks whether a surface is manifold by checking the following conditions:
+ *  Triangle mesh is 2-manifold iff:
+        * 1 -----------> all edges share two faces
+        * If there is a halfedge which does not have another half,  there is an edge with only ONE adjacent face
+        * 2 ----------> no pinch points at vertices (single cycle around each vertex). NOT TESTING AGAINST SELF INTERSECTIONS */
+bool HalfEdgeMesh::check_manifold(){
+    //Check if any of the opposite's are set to -1 (i.e-- they do not have another half)
+    auto it = std::find(halfedges_opposite.begin(), halfedges_opposite.end(), -1);
+    if (it != halfedges_opposite.end()) {
+        return false; //Not manifold- condition 1 not true
+    }
+
+    //Check for pinch point
+    for(unsigned int vertex = 0; vertex < vertex_positions.size(); vertex++) {
+        //Check number of half edges that have this vertex as endpoint.
+        int degree = std::count(halfedges_vertex_to.begin(), halfedges_vertex_to.end(), vertex);
+
+        std::unordered_set<unsigned int> one_ring = get_one_ring_vertices(vertex);
+
+        if(degree != one_ring.size()) {
+         //Pinch point
+         return 0;
+        }
+    }
     return 1;
 }
+
 
 /* Splits edge at its midpoint. Creates 2 new faces, 1 new vertex, and modifies 2 existing faces & their halfedges*/
 void HalfEdgeMesh::edge_split(const unsigned int& he_idx) {
@@ -319,6 +362,90 @@ void HalfEdgeMesh::edge_split(const unsigned int& he_idx) {
     halfedges_vertex_to[he_opp_idx_2] = new_vertex_idx;
     //Face 1
     halfedges_vertex_to[he_idx] = new_vertex_idx;
+
+
+}
+
+/* Halfedge collapse:
+ *
+An edge collapse transformation K -> K' that collapses the edge {i, j} ∈ K
+is a legal move if and only if the following conditions are satisfied (proof in [6]):
+
+1. For all vertices {k} adjacent to both {i} and {j} ({i, k} ∈ K and {j, k} ∈ K),
+   {i, j, k} is a face of K.
+
+2. If {i} and {j} are both boundary vertices, {i, j} is a boundary edge.
+
+3. K has more than 4 vertices if neither {i} nor {j} are boundary vertices,
+   or K has more than 3 vertices if either {i} or {j} are boundary vertices.
+
+   Taken from:
+   Hoppe, H., Derose, T., Duchamp, T., Mcdonald, J. and Stuetzle, Mesh Optimization.
+   Available from: https://www.hhoppe.com/meshopt.pdf.
+
+    //TODO: check if boundary. Right now it is okay to not check as the input is assumed to be from Marching Cubes application
+
+ * */
+void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx) {
+    unsigned int const& vertex_to = halfedges_vertex_to[he_idx];
+    unsigned int const& vertex_from = halfedges_vertex_to[halfedges_opposite[he_idx]];
+
+    //Iterate through one ring
+    std::unordered_set<unsigned int> p_onering = get_one_ring_vertices(vertex_to);
+    std::unordered_set<unsigned int> q_onering = get_one_ring_vertices(vertex_from);
+
+
+
+    //Check for legality of operation
+    std::unordered_set<unsigned int> intersection;
+    for (const int& vertex : p_onering) {
+        if (q_onering.find(vertex) != q_onering.end()) {
+            intersection.insert(vertex);
+        }
+    }
+
+    //In order for edge collapse to be legal, vertices which belong to the intersection must form a triangle with v0 and v1 and the target edge
+    std::unordered_set<unsigned int> connected_vertices; // Vertices which form triangles with the target edge
+    connected_vertices.insert(vertex_to);
+
+    // Triangle belonging to he_idx
+    unsigned int const& he_1_idx = get_next_halfedge(he_idx);
+    connected_vertices.insert(halfedges_vertex_to[he_1_idx]);
+
+    unsigned int const& he_2_idx = get_next_halfedge(he_1_idx);
+    connected_vertices.insert(halfedges_vertex_to[he_2_idx]);
+
+    //Triangle belonging to he_opposite_idx
+    unsigned int const& he_opposite_idx = halfedges_opposite[he_idx];
+    connected_vertices.insert(halfedges_vertex_to[he_opposite_idx]);
+
+    unsigned int const& he_opp_idx_1 = get_next_halfedge(he_opposite_idx);
+    connected_vertices.insert(halfedges_vertex_to[he_opp_idx_1]);
+
+    unsigned int const& he_opp_idx_2 = get_next_halfedge(he_opp_idx_1);
+    connected_vertices.insert(halfedges_vertex_to[he_opp_idx_2]);
+
+    if(connected_vertices.size() != intersection.size()) {
+        //Illegal operation.
+        return;
+    }
+
+    // Check if all elements are equal (they must be), if not it must mean there are more triangles connecting to p and q which
+    // do not form a triangle with edge pq
+    for (const int& vertex : intersection) {
+        if (connected_vertices.find(vertex) == connected_vertices.end()) {
+            return;
+        }
+    }
+
+    //Update data structure to reflect edge collapse
+
+
+
+
+
+
+
 
 
 }

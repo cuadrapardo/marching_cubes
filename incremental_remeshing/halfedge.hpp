@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <array>
+#include <unordered_set>
 #include <glm/vec3.hpp>
 
 
@@ -14,7 +15,7 @@ struct HalfEdgeMesh {
     // Vertex information
     std::vector<glm::vec3> vertex_positions;
     std::vector<glm::vec3> vertex_normals;
-    std::vector<int> vertex_outgoing_halfedge; // aka. first directed edge
+    std::vector<int> vertex_outgoing_halfedge; // aka. first directed edge of a vertex
 
     // Halfedge information
     std::vector<int> halfedges_opposite; //aka. other halves
@@ -31,6 +32,7 @@ struct HalfEdgeMesh {
     std::array<int, 3> get_halfedges(unsigned int const& face_idx);
     int get_previous_halfedge(unsigned int const& halfedge);
     int get_next_halfedge(unsigned int const& halfedge);
+    std::unordered_set<unsigned int> get_one_ring_vertices(unsigned int const& vertex_idx);
 
     //Mesh operations
     void edge_collapse(unsigned int const& edge_idx);
