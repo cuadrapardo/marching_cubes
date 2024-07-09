@@ -244,9 +244,10 @@ int main() try
 
     pBuffer.push_back(std::move(cubeBuffer));
     lBuffer.push_back(std::move(lineBuffer));
+#endif
 
-#else
-    //Load file obj, .tri, todo: point cloud format
+#if TEST_MODE == OFF
+//Load file obj, .tri, todo: point cloud format
     PointCloud pointCloud;
     pointCloud.positions = load_file(cfg::torusTri, window, allocator);
     pointCloud.set_color(glm::vec3(0, 0.5f, 0.5f));
@@ -282,6 +283,8 @@ int main() try
     //Create file and convert to HalfEdge data structure
     write_OBJ(reconstructedSurface.positions, cfg::torusTri);
     HalfEdgeMesh marchingCubesMesh = obj_to_halfedge(cfg::reconstructedOBJ);
+    ui_config.manifold = marchingCubesMesh.check_manifold();
+
 
     //Create buffers for rendering
     PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
@@ -303,6 +306,27 @@ int main() try
         mBuffer.push_back(std::move(cube_triangles));
     }
 #endif
+
+#if TEST_MODE == EDGE
+    ui_config.vertices = false;
+    ui_config.distance_field = false;
+    ui_config.grid = false;
+    ui_config.flyCamera = true;
+    ui_config.surface = true;
+
+    BoundingBox pointCloudBBox;
+    std::vector<PointBuffer> pBuffer;
+    std::vector<LineBuffer> lBuffer;
+    std::vector<MeshBuffer> mBuffer;
+
+    HalfEdgeMesh edgeTest = obj_to_halfedge(cfg::edgeTestOBJ);
+
+    Mesh edgeTestMesh(edgeTest);
+    MeshBuffer edgeTestBuffer = create_mesh_buffer(edgeTest, window, allocator);
+    mBuffer.push_back(std::move(edgeTestBuffer));
+
+#endif
+
 
 
     auto previousClock = Clock_::now();
@@ -395,6 +419,28 @@ int main() try
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+#if TEST_MODE == EDGE
+        if(ImGui::Button("Split Edges")) {
+        }
+        if(ImGui::Button("Collapse Edges")) {
+        }
+        if(ImGui::Button("Flip Edges")) {
+        }
+
+        if (ImGui::Button("Recalculate")) {
+            // Wait for GPU to finish processing
+            vkDeviceWaitIdle(window.device);
+
+            std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
+            //TODO: RECALCULATE edges
+
+//            recalculate_edge(pointCloud, distanceField, reconstructedSurface, ui_config, pointCloudBBox,pBuffer, lBuffer, mBuffer,
+//                             window, allocator);
+        }
+
+
+#endif
 #if TEST_MODE == OFF
         ImGui::Begin("Camera Type Menu");
         if (ImGui::RadioButton("Flying camera", ui_config.flyCamera)) {
@@ -434,7 +480,10 @@ int main() try
 
 
         }
-#else
+
+#endif
+
+#if TEST_MODE == ON
         // Create a window
         ImGui::Text("3D Cube Values");
         if (ImGui::RadioButton("Vertex 0", test_cube_vertex_classification[0] == 1)) {

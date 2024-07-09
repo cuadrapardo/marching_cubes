@@ -444,14 +444,13 @@ labutils::Pipeline create_triangle_pipeline(labutils::VulkanWindow const &aWindo
     rasterInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterInfo.depthClampEnable = VK_FALSE;
     rasterInfo.rasterizerDiscardEnable = VK_FALSE;
-#if TEST_MODE == ON
-    rasterInfo.cullMode = VK_CULL_MODE_NONE;
-    rasterInfo.polygonMode = VK_POLYGON_MODE_LINE;
-#else
+#if TEST_MODE == OFF
     rasterInfo.cullMode = VK_CULL_MODE_BACK_BIT;
      rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
-     //TODO: add toggle to trigger polygon mode in Ui
-//    rasterInfo.polygonMode = VK_POLYGON_MODE_LINE;
+     //TODO: add toggle to trigger polygon mode in UI
+#else
+    rasterInfo.cullMode = VK_CULL_MODE_NONE;
+    rasterInfo.polygonMode = VK_POLYGON_MODE_LINE;
 #endif
     rasterInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterInfo.depthBiasEnable = VK_FALSE;

@@ -11,14 +11,21 @@
 #include "../labutils/error.hpp"
 #include "../labutils/vkutil.hpp"
 #include "../labutils/to_string.hpp"
+#include "../../incremental_remeshing/halfedge.hpp"
 
 struct Mesh {
     std::vector<glm::vec3> positions;
     std::vector<glm::vec3> colors;
     std::vector<glm::vec3> normals;
 
+    Mesh();
+    // Constructor that initializes a Mesh from a HalfEdgeMesh
+    Mesh(HalfEdgeMesh const& halfEdgeMesh);
+
     void set_color(glm::vec3 const& color);
     void set_normals(glm::vec3 const& normal); //TODO: remove.
+
+
 
 };
 

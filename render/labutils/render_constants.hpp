@@ -7,8 +7,9 @@
 
 #define OFF 0
 #define ON 1
+#define EDGE 2
 
-#define TEST_MODE OFF
+#define TEST_MODE EDGE
 
 
 #if TEST_MODE == ON
@@ -84,6 +85,7 @@ namespace cfg
     constexpr char const* sponzaObj = MODELDIR_ "sponza_with_ship.obj";
     constexpr char const* torusTri = MODELDIR_ "cube.tri";
     constexpr char const* cubeOBJ = MODELDIR_ "cube.obj";
+    constexpr char const* edgeTestOBJ = MODELDIR_ "edge_test.obj";
 
 #       undef MODELDIR_
 

@@ -72,6 +72,7 @@ std::unordered_set<unsigned int> HalfEdgeMesh::get_one_ring_vertices(const unsig
     int const& fde = vertex_outgoing_halfedge[vertex_idx];
     one_ring.insert(halfedges_vertex_to[fde]);
     int current_he_idx = get_previous_halfedge(fde);
+    assert(halfedges_vertex_to[current_he_idx] == vertex_idx);
     while(fde != current_he_idx) {
         unsigned int other_half = halfedges_opposite[current_he_idx];
         if(other_half == fde) {
@@ -83,12 +84,10 @@ std::unordered_set<unsigned int> HalfEdgeMesh::get_one_ring_vertices(const unsig
     return one_ring;
 }
 
-
-
 /* For each halfedge, find its other half */
 void HalfEdgeMesh::set_other_halves() {
     unsigned int face_idx = 0;
-    for(unsigned int vertex_idx = 0; vertex_idx < faces.size(); vertex_idx += 3) {
+    for (unsigned int vertex_idx = 0; vertex_idx < faces.size(); vertex_idx += 3) {
         //Find indices of its 3 halfedges
         std::array<int, 3> halfedges = get_halfedges(face_idx);
 
@@ -99,36 +98,28 @@ void HalfEdgeMesh::set_other_halves() {
          * -----> The vertex E is pointing TOWARDS must be the same vertex OE's previous edge is pointing towards
          *  We can successfully find a halfedge's other half by finding the edge that fulfills these requirements */
 
-        for(auto& halfedge : halfedges ) {
+        for (auto& halfedge: halfedges) {
             int previous_he = get_previous_halfedge(halfedge);
             int vertex_from = halfedges_vertex_to[previous_he];
 
-
-            //Find all edges that point towards previous vertex
-            auto it = halfedges_vertex_to.begin();
-
-            while (it != halfedges_vertex_to.end()) {
-                it = std::find(it, halfedges_vertex_to.end(), vertex_from );
-
-                // Check if `std::find` found an element
-                if (it == halfedges_vertex_to.end()) {
-                    break;
+            //Find all edges that point towards previous vertex (vertex from)
+            for (unsigned int otherhalf = 0; otherhalf < halfedges_vertex_to.size(); otherhalf++) {
+                if (halfedges_vertex_to[otherhalf] != vertex_from) {
+                    continue; //Not found candidate other half
                 }
 
-                unsigned int candidate_he = (std::distance(halfedges_vertex_to.begin(), it));
                 //Check if this candidate halfedge is actually the other half
-                int candidate_he_previous_he = get_previous_halfedge(candidate_he);
-                int candidate_he_vertex_from = halfedges_vertex_to[candidate_he_previous_he];
-
-                int vertex_to_halfedge = halfedges_vertex_to[halfedge];
-                int vertex_to_candidate = halfedges_vertex_to[candidate_he];
-                if(candidate_he_vertex_from == vertex_to_halfedge && vertex_from == vertex_to_candidate) {
-                // Found other half
-                     halfedges_opposite[halfedge] = candidate_he;
+                int vertex_to = halfedges_vertex_to[halfedge];
+                int vertex_to_candidate = halfedges_vertex_to[otherhalf];
+                if (vertex_from == vertex_to_candidate) {
+                    // Found other half
+                    halfedges_opposite[halfedge] = otherhalf;
+                    halfedges_opposite[otherhalf] = halfedge;
                     break;
-                    }
-                   ++it; // Move past the current found item
+                } else {
+                    continue;
                 }
+            }
         }
         face_idx++;
     }
@@ -154,6 +145,11 @@ HalfEdgeMesh obj_to_halfedge(char const* file_path) {
         std::string token;
         iss >> token;
 
+        if (line.empty() || line[0] == '#') {
+            continue;
+        }
+
+
         if (token == "v") { // Vertices
             glm::vec3 position;
             iss >> position.x >> position.y >> position.z;
@@ -162,7 +158,6 @@ HalfEdgeMesh obj_to_halfedge(char const* file_path) {
                 position.y,
                 position.z
             });
-
             mesh.vertex_outgoing_halfedge.push_back(-1);
         } else if (token == "vn") { // Normals
             glm::vec3 normal;
@@ -210,9 +205,11 @@ HalfEdgeMesh obj_to_halfedge(char const* file_path) {
     }
     obj_file.close();
 
-    std::cout << "Pairing other halves in mesh structure."
+    std::cout << "Pairing other halves in mesh structure. "
                  "Total n of halfedges: " << mesh.halfedges_opposite.size() << std::endl;
     mesh.set_other_halves();
+
+    return mesh;
 }
 
 /* Finds average edge length, useful as a target lentgh for tangential relaxation */
@@ -238,19 +235,26 @@ float HalfEdgeMesh::get_mean_edge_length() {
         * 2 ----------> no pinch points at vertices (single cycle around each vertex). NOT TESTING AGAINST SELF INTERSECTIONS */
 bool HalfEdgeMesh::check_manifold(){
     //Check if any of the opposite's are set to -1 (i.e-- they do not have another half)
-    auto it = std::find(halfedges_opposite.begin(), halfedges_opposite.end(), -1);
-    if (it != halfedges_opposite.end()) {
-        return false; //Not manifold- condition 1 not true
+    for(unsigned int i = 0; i < halfedges_opposite.size(); i++ ) {
+        if(halfedges_opposite[i] == -1) {
+            return false;
+        }
     }
 
     //Check for pinch point
     for(unsigned int vertex = 0; vertex < vertex_positions.size(); vertex++) {
         //Check number of half edges that have this vertex as endpoint.
-        int degree = std::count(halfedges_vertex_to.begin(), halfedges_vertex_to.end(), vertex);
+
+        unsigned int degree = 0;
+        for(unsigned int j = 0; j < halfedges_vertex_to.size(); j++ ) {
+            if(halfedges_vertex_to[j] == vertex) {
+                degree++;
+                continue;
+            }
+        }
 
         std::unordered_set<unsigned int> one_ring = get_one_ring_vertices(vertex);
-
-        if(degree != one_ring.size()) {
+        if(degree > one_ring.size()) {
          //Pinch point
          return 0;
         }

@@ -5,6 +5,7 @@
 #include <cstring>
 #include "mesh.hpp"
 
+
 void Mesh::set_color(glm::vec3 const& color) {
     colors.resize(positions.size());
     std::fill(colors.begin(), colors.end(), color);
@@ -13,6 +14,22 @@ void Mesh::set_normals(glm::vec3 const& normal) {
     normals.resize(positions.size());
     std::fill(normals.begin(), normals.end(), normal);
 }
+
+
+Mesh::Mesh() : positions(), colors(), normals() {
+}
+
+Mesh::Mesh(HalfEdgeMesh const& halfedge_mesh) {
+    for(unsigned int face_idx = 0; face_idx < halfedge_mesh.faces.size(); face_idx++) {
+        unsigned int current_vertex_idx = halfedge_mesh.faces[face_idx];
+        positions.push_back(
+                halfedge_mesh.vertex_positions[current_vertex_idx]
+                );
+    }
+    set_color(glm::vec3{1,1,1});
+    set_normals(glm::vec3{0,0,1});
+}
+
 
 MeshBuffer create_mesh_buffer(Mesh const& mesh, labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
 
