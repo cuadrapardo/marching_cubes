@@ -87,6 +87,8 @@ namespace cfg
 
 #       undef MODELDIR_
 
+    constexpr char const* reconstructedOBJ = "reconstructed_surface.obj";
+
 
     constexpr VkFormat kDepthFormat = VK_FORMAT_D32_SFLOAT;
 

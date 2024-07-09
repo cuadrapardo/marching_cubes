@@ -109,6 +109,12 @@ void HalfEdgeMesh::set_other_halves() {
 
             while (it != halfedges_vertex_to.end()) {
                 it = std::find(it, halfedges_vertex_to.end(), vertex_from );
+
+                // Check if `std::find` found an element
+                if (it == halfedges_vertex_to.end()) {
+                    break;
+                }
+
                 unsigned int candidate_he = (std::distance(halfedges_vertex_to.begin(), it));
                 //Check if this candidate halfedge is actually the other half
                 int candidate_he_previous_he = get_previous_halfedge(candidate_he);
@@ -132,6 +138,8 @@ void HalfEdgeMesh::set_other_halves() {
 /* Reads in an obj and returns a HalfEdgeMesh */
 HalfEdgeMesh obj_to_halfedge(char const* file_path) {
     //TODO: check for boundary to generalise
+
+    std::cout << "Creating halfedge data structure from reconstructed surface" << std::endl;
     HalfEdgeMesh mesh;
     std::ifstream obj_file(file_path);
     if (!obj_file.is_open()) {
@@ -202,6 +210,8 @@ HalfEdgeMesh obj_to_halfedge(char const* file_path) {
     }
     obj_file.close();
 
+    std::cout << "Pairing other halves in mesh structure."
+                 "Total n of halfedges: " << mesh.halfedges_opposite.size() << std::endl;
     mesh.set_other_halves();
 }
 
@@ -291,7 +301,7 @@ void HalfEdgeMesh::edge_split(const unsigned int& he_idx) {
 
     glm::vec3 pos_2 = vertex_positions[he_opp_vertex_to];
 
-    glm::vec3 midpoint = ( pos_1 + pos2 ) / 2.0f; //position of vertex that splits the edge at midpoint
+    glm::vec3 midpoint = ( pos_1 + pos_2 ) / 2.0f; //position of vertex that splits the edge at midpoint
 
     // Add vertex to data structure
     vertex_positions.push_back(midpoint);

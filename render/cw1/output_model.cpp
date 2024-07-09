@@ -3,6 +3,7 @@
 //
 
 #include "output_model.hpp"
+#include "../labutils/render_constants.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -11,8 +12,7 @@
 void write_OBJ(std::vector<glm::vec3> const& positions, std::string const& filename) {
     assert(positions.size()%3 == 0); //Must be a multiple of 3
 
-    std::string out_filename = "reconstructed_surface";
-    out_filename += ".obj";
+    std::string out_filename = cfg::reconstructedOBJ;
     std::ofstream objFile(out_filename);
     if (!objFile.is_open()) {
         std::cerr << "Failed to open file: " << out_filename << "\n";
@@ -29,8 +29,8 @@ void write_OBJ(std::vector<glm::vec3> const& positions, std::string const& filen
 
     objFile.close();
     if (objFile.fail()) {
-        std::cerr << "Failed to write to file: " << filename << "\n";
+        std::cerr << "Failed to write to file: " << cfg::reconstructedOBJ << "\n";
     } else {
-        std::cout << "Successfully wrote to file: " << filename << "\n";
+        std::cout << "Successfully wrote to file: " << cfg::reconstructedOBJ << "\n";
     }
 }

@@ -279,6 +279,10 @@ int main() try
     reconstructedSurface.set_color(glm::vec3{1.0f, 0.0f, 0.0f});
     reconstructedSurface.set_normals(glm::vec3(1.0f,1.0,0)); //TODO: calculate normals
 
+    //Create file and convert to HalfEdge data structure
+    write_OBJ(reconstructedSurface.positions, cfg::torusTri);
+    HalfEdgeMesh marchingCubesMesh = obj_to_halfedge(cfg::reconstructedOBJ);
+
     //Create buffers for rendering
     PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
                                                              window, allocator);
@@ -410,9 +414,12 @@ int main() try
         ImGui::Checkbox("View vertex color", &ui_config.vertex_color);
         ImGui::Checkbox("View edge color", &ui_config.edge_color);
         ImGui::Checkbox("View surface", &ui_config.surface);
-        ImGui::Text("Hausdorff Distance: -");
+        ImGui::Text("Reconstructed surface %s manifold", ui_config.manifold ? "is" : "is not");
         ImGui::SliderFloat("Grid Resolution",&ui_config.grid_resolution, ui_config.grid_resolution_min, ui_config.grid_resolution_max);
         ImGui::InputInt("Isovalue", &ui_config.isovalue);
+        if (ImGui::Button("Check manifoldness")) {
+            ui_config.manifold = marchingCubesMesh.check_manifold();
+        }
         if (ImGui::Button("Output to file")) {
             write_OBJ(reconstructedSurface.positions, cfg::torusTri);
         }
