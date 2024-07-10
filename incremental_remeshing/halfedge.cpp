@@ -111,7 +111,9 @@ void HalfEdgeMesh::set_other_halves() {
                 //Check if this candidate halfedge is actually the other half
                 int vertex_to = halfedges_vertex_to[halfedge];
                 int vertex_to_candidate = halfedges_vertex_to[otherhalf];
-                if (vertex_from == vertex_to_candidate) {
+                int previous_he_candidate = get_previous_halfedge(halfedge);
+                int vertex_from_candidate = halfedges_vertex_to[previous_he_candidate];
+                if (vertex_from == vertex_to_candidate && vertex_to == vertex_from_candidate) {
                     // Found other half
                     halfedges_opposite[halfedge] = otherhalf;
                     halfedges_opposite[otherhalf] = halfedge;
@@ -244,7 +246,6 @@ bool HalfEdgeMesh::check_manifold(){
     //Check for pinch point
     for(unsigned int vertex = 0; vertex < vertex_positions.size(); vertex++) {
         //Check number of half edges that have this vertex as endpoint.
-
         unsigned int degree = 0;
         for(unsigned int j = 0; j < halfedges_vertex_to.size(); j++ ) {
             if(halfedges_vertex_to[j] == vertex) {
@@ -252,9 +253,9 @@ bool HalfEdgeMesh::check_manifold(){
                 continue;
             }
         }
-
+        //Check whether this number matches the vertex one ring
         std::unordered_set<unsigned int> one_ring = get_one_ring_vertices(vertex);
-        if(degree > one_ring.size()) {
+        if(degree != one_ring.size()) {
          //Pinch point
          return 0;
         }
@@ -452,14 +453,52 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx) {
         }
     }
 
-    //Update data structure to reflect edge collapse
+    //TODO: Update data structure to reflect edge collapse
+}
 
+/* Splits all edges longer than high_edge_length at their midpoint */
+void HalfEdgeMesh::split_long_edges(const float& high_edge_length) {
+    for(unsigned int edge = 0; edge < halfedges_vertex_to.size(); edge++) {
+        glm::vec3 const& vertex_to_position = vertex_positions[halfedges_vertex_to[edge]];
+        unsigned int vertex_from_idx = halfedges_vertex_to[halfedges_opposite[edge]];
+        glm::vec3 const& vertex_from_position = vertex_positions[vertex_from_idx];
+        float edge_length = glm::distance(
+                vertex_to_position,
+                vertex_from_position
+        );
+        if(edge_length < high_edge_length) {
+            continue;
+        }
+        //Edge is too long- split at midpoint
+        edge_split(edge);
+    }
+}
 
+void HalfEdgeMesh::collapse_short_edges(const float& high_edge_length, const float& low_edge_length) {
 
+}
 
+/* Performs remeshing according to procedures described in
+ * Botsch, M. and Kobbelt, L. 2004. A remeshing approach to multiresolution modeling.
+ * This consists of the following operations:
+ * - Find mean edge length. This will be used as the target length (although this is not necessary, the user could input their own value)
+ * - Split long edges
+ * - Collapse short edges
+ * - Tangential relaxation (smooth mesh without deformation)
+ * Another description of the algorithm can be seen at: Botsch, M. 2010. Polygon mesh processing. Natick, Mass.: A K Peters. pages 100 - 102*/
+void HalfEdgeMesh::remesh(float const& input_target_edge_length) {
+    float target_edge_length;
+    if(input_target_edge_length == 0) {
+        target_edge_length = get_mean_edge_length();
+    } else {
+        target_edge_length = input_target_edge_length;
+    }
+    float low = 4/5 * target_edge_length; // the thresholds 4/5 and 4/3
+    float high = 4/3 * target_edge_length; // are essential to converge to a uniform edge length
 
+    split_long_edges(high);
 
-
+    collapse_short_edges(high, low);
 
 
 }

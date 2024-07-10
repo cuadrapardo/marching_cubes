@@ -321,9 +321,11 @@ int main() try
 
     HalfEdgeMesh edgeTest = obj_to_halfedge(cfg::edgeTestOBJ);
 
-    Mesh edgeTestMesh(edgeTest);
+//    Mesh edgeTestMesh(edgeTest);
     MeshBuffer edgeTestBuffer = create_mesh_buffer(edgeTest, window, allocator);
     mBuffer.push_back(std::move(edgeTestBuffer));
+
+    ui_config.target_edge_length = edgeTest.get_mean_edge_length();
 
 #endif
 
@@ -422,18 +424,30 @@ int main() try
 
 #if TEST_MODE == EDGE
         if(ImGui::Button("Split Edges")) {
+            edgeTest.split_long_edges( (4.0/3.0f) * ui_config.target_edge_length);
+            vkDeviceWaitIdle(window.device);
+            //Recalculate mesh buffer.
+            edgeTestBuffer.vertexCount = 0;
+            edgeTestBuffer = create_mesh_buffer(edgeTest, window, allocator);
+            mBuffer[0] = (std::move(edgeTestBuffer));
+
         }
         if(ImGui::Button("Collapse Edges")) {
         }
         if(ImGui::Button("Flip Edges")) {
         }
 
-        if (ImGui::Button("Recalculate")) {
+        ImGui::Text("Reconstructed surface %s manifold", ui_config.manifold ? "is" : "is not");
+        if (ImGui::Button("Check manifoldness")) {
+            ui_config.manifold = edgeTest.check_manifold();
+        }
+
+        if (ImGui::Button("Reset")) {
             // Wait for GPU to finish processing
             vkDeviceWaitIdle(window.device);
 
             std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
-            //TODO: RECALCULATE edges
+            //TODO: Reset to original state
 
 //            recalculate_edge(pointCloud, distanceField, reconstructedSurface, ui_config, pointCloudBBox,pBuffer, lBuffer, mBuffer,
 //                             window, allocator);

@@ -85,7 +85,7 @@ namespace cfg
     constexpr char const* sponzaObj = MODELDIR_ "sponza_with_ship.obj";
     constexpr char const* torusTri = MODELDIR_ "cube.tri";
     constexpr char const* cubeOBJ = MODELDIR_ "cube.obj";
-    constexpr char const* edgeTestOBJ = MODELDIR_ "edge_test.obj";
+    constexpr char const* edgeTestOBJ = MODELDIR_ "blender_test_1.obj";
 
 #       undef MODELDIR_
 

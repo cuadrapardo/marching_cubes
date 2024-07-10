@@ -37,6 +37,7 @@ struct MeshBuffer {
     std::uint32_t vertexCount;
 };
 
+
 MeshBuffer create_mesh_buffer(Mesh const& mesh, labutils::VulkanContext const& window, labutils::Allocator const& allocator);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_MESH_HPP

@@ -28,6 +28,7 @@ struct UiConfiguration {
     int point_cloud_size = 5;
     const int p_cloud_size_min = 1, p_cloud_size_max = 10;
     int isovalue = 2; //TODO: limit max / min depending on data.
+    float target_edge_length = 0.0f;
 
     bool manifold = false;
     bool flyCamera = true;

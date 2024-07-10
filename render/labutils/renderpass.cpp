@@ -449,7 +449,9 @@ labutils::Pipeline create_triangle_pipeline(labutils::VulkanWindow const &aWindo
      rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
      //TODO: add toggle to trigger polygon mode in UI
 #else
-    rasterInfo.cullMode = VK_CULL_MODE_NONE;
+    rasterInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterInfo.polygonMode = VK_POLYGON_MODE_FILL;
+//    rasterInfo.cullMode = VK_CULL_MODE_NONE;
     rasterInfo.polygonMode = VK_POLYGON_MODE_LINE;
 #endif
     rasterInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;

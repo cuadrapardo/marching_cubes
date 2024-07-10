@@ -42,12 +42,12 @@ struct HalfEdgeMesh {
     //Incremental remeshing operations
     float get_mean_edge_length();
     void split_long_edges(const float& high_edge_length);
-    void collapse_short_edges();
+    void collapse_short_edges(const float& high_edge_length, const float& low_edge_length);
     void equalize_valences();
     void tangential_relaxation();
     void project_to_surface();
 
-    void remesh();
+    void remesh(float const& input_target_edge_length);
 };
 
 HalfEdgeMesh obj_to_halfedge(char const* path);
