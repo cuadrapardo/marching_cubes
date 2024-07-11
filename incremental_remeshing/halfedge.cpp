@@ -111,7 +111,7 @@ void HalfEdgeMesh::set_other_halves() {
                 //Check if this candidate halfedge is actually the other half
                 int vertex_to = halfedges_vertex_to[halfedge];
                 int vertex_to_candidate = halfedges_vertex_to[otherhalf];
-                int previous_he_candidate = get_previous_halfedge(halfedge);
+                int previous_he_candidate = get_previous_halfedge(otherhalf);
                 int vertex_from_candidate = halfedges_vertex_to[previous_he_candidate];
                 if (vertex_from == vertex_to_candidate && vertex_to == vertex_from_candidate) {
                     // Found other half
