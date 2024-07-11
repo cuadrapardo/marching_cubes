@@ -41,7 +41,7 @@ namespace ui {
  * Populates same buffers that were deleted with updated ones
  * As this is not using a double buffer, the window will */
 //TODO: Create recalculate point cloud. Maybe will be useful to resize point size- this is secondary.
-void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, Mesh& triangles,
+IndexedMesh recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, Mesh& triangles,
                       UiConfiguration const& ui_config, BoundingBox& bbox,
                       std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer, std::vector<MeshBuffer>& mBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
@@ -72,10 +72,10 @@ void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, Mesh& t
     std::vector<unsigned int> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
     distanceField.set_color(vertex_classification);
 
-    Mesh case_triangles;
-    case_triangles.positions =  query_case_table(vertex_classification,  distanceField.positions,
+    IndexedMesh case_triangles_indexed =  query_case_table(vertex_classification,  distanceField.positions,
             distanceField.point_size, ui_config.grid_resolution, bbox, ui_config.isovalue);
 
+    Mesh case_triangles(case_triangles_indexed);
     case_triangles.set_normals(glm::vec3{1, 1.0, 0});
     case_triangles.set_color(glm::vec3{1, 0, 0});
 
@@ -105,4 +105,6 @@ void recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, Mesh& t
     pBuffer[1] = (std::move(gridPointBuffer)); // Point buffer for grid points
     lineBuffer[0]  = (std::move(gridLineBuffer)); // Line buffer for grid lines
     std::cout << "Continue rendering with new buffers" << std::endl;
+
+    return case_triangles_indexed;
 }

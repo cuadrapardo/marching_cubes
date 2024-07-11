@@ -66,10 +66,26 @@ glm::vec3 linear_interpolation(glm::vec3 const& point_1, glm::vec3 const& point_
 /* The diagram refers to the layout desribed in mc_tables.h
  * Given the grid values ( 0 or 1 - negative or positive), iterate and for each cube find its case.
  * Returns a vector of points where each triple(3) of vec3s define a triangle */
-std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_classification,  std::vector<glm::vec3> const& grid_positions,
+IndexedMesh query_case_table(std::vector<unsigned int> const& grid_classification,  std::vector<glm::vec3> const& grid_positions,
                                         std::vector<int> const& grid_scalar_values, float const& grid_resolution, BoundingBox const& model_bbox,
                                         float const& input_isovalue) {
-    std::vector<glm::vec3> reconstructed_mesh;
+
+    IndexedMesh indexedMesh;
+    // Function to add a vertex to indexed mesh or get its index if it already exists
+    auto set_vertex = [&](const glm::vec3& v) -> int {
+        auto it = indexedMesh.vertex_idx_map.find(v);
+        if (it != indexedMesh.vertex_idx_map.end()) {
+            // Vertex already exists, return its index
+            return it->second;
+        } else {
+            // Vertex does not exist, add it to the vector and map
+            indexedMesh.positions.push_back(v);
+            int newIndex = indexedMesh.positions.size() - 1;
+            indexedMesh.vertex_idx_map[v] = newIndex;
+            return newIndex;
+        }
+    };
+
      float isovalue = input_isovalue + 0.5; //TODO: Might be nicer to shift this elsewhere.
     std::cout << "Classifying all cubes in the grid" << std::endl;
     glm::vec3 extents = glm::abs(model_bbox.max - model_bbox.min);
@@ -145,16 +161,27 @@ std::vector<glm::vec3> query_case_table(std::vector<unsigned int> const& grid_cl
 
                     glm::vec3 vertex_2 = linear_interpolation(grid_positions[edge_2_vertex_0_idx], grid_positions[edge_2_vertex_1_idx],
                                                               grid_scalar_values[edge_2_vertex_0_idx], grid_scalar_values[edge_2_vertex_1_idx],  isovalue);
-                    reconstructed_mesh.push_back(vertex_0);
-                    reconstructed_mesh.push_back(vertex_1);
-                    reconstructed_mesh.push_back(vertex_2);
+
+                    //TODO: check if vertex already exists. This will remove duplicate vertices.
+                    //TODO: return indexed mesh.
+                    //The idea is to maybe index these vertices so they are not duplicated.
+
+                    unsigned int idx_0 = set_vertex(vertex_0);
+                    unsigned int idx_1 = set_vertex(vertex_1);
+                    unsigned int idx_2 = set_vertex(vertex_2);
+                    indexedMesh.face_indices.push_back(idx_0);
+                    indexedMesh.face_indices.push_back(idx_1);
+                    indexedMesh.face_indices.push_back(idx_2);
+//                    reconstructed_mesh.push_back(vertex_0);
+//                    reconstructed_mesh.push_back(vertex_1);
+//                    reconstructed_mesh.push_back(vertex_2);
 
                 }
 
             }
         }
     }
-    return reconstructed_mesh;
+    return indexedMesh;
 
 }
 
@@ -217,7 +244,7 @@ std::vector<glm::vec3> query_case_table_test(std::vector<unsigned int> const& gr
                                                   grid_positions[edge_2[1]],
                                                   MAP_CLASSIFICATION_TO_VALUE(grid_values[edge_2[0]]),
                                                   MAP_CLASSIFICATION_TO_VALUE(grid_values[edge_2[1]]), isovalue);
-        reconstructed_mesh.push_back(vertex_0); // ??? winding order????!
+        reconstructed_mesh.push_back(vertex_0);
         reconstructed_mesh.push_back(vertex_1);
         reconstructed_mesh.push_back(vertex_2);
 

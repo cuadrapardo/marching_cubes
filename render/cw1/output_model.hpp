@@ -9,7 +9,8 @@
 #include <string>
 
 #include <glm/vec3.hpp>
+#include "mesh.hpp"
 
-void write_OBJ(std::vector<glm::vec3> const& vertices, std::string const& filename);
+void write_OBJ(IndexedMesh const& indexedMesh, std::string const& filename);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_OUTPUT_MODEL_HPP

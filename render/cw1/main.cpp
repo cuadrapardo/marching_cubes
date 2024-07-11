@@ -274,14 +274,14 @@ int main() try
     auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, pointCloudBBox, ui_config.grid_resolution);
 
     //Create marching cubes surface
-    Mesh reconstructedSurface;
-    reconstructedSurface.positions = query_case_table(vertex_classification, distanceField.positions, distanceField.point_size, ui_config.grid_resolution,
+    IndexedMesh reconstructedSurfaceIndexed = query_case_table(vertex_classification, distanceField.positions, distanceField.point_size, ui_config.grid_resolution,
                                                       pointCloudBBox, ui_config.isovalue);
+    Mesh reconstructedSurface(reconstructedSurfaceIndexed);
     reconstructedSurface.set_color(glm::vec3{1.0f, 0.0f, 0.0f});
     reconstructedSurface.set_normals(glm::vec3(1.0f,1.0,0)); //TODO: calculate normals
 
     //Create file and convert to HalfEdge data structure
-    write_OBJ(reconstructedSurface.positions, cfg::torusTri);
+    write_OBJ(reconstructedSurfaceIndexed, cfg::torusTri);
     HalfEdgeMesh marchingCubesMesh = obj_to_halfedge(cfg::reconstructedOBJ);
     ui_config.manifold = marchingCubesMesh.check_manifold();
 
@@ -321,9 +321,10 @@ int main() try
 
     HalfEdgeMesh edgeTest = obj_to_halfedge(cfg::edgeTestOBJ);
 
-//    Mesh edgeTestMesh(edgeTest);
     MeshBuffer edgeTestBuffer = create_mesh_buffer(edgeTest, window, allocator);
     mBuffer.push_back(std::move(edgeTestBuffer));
+
+    ui_config.manifold = edgeTest.check_manifold();
 
     ui_config.target_edge_length = edgeTest.get_mean_edge_length();
 
@@ -481,15 +482,14 @@ int main() try
             ui_config.manifold = marchingCubesMesh.check_manifold();
         }
         if (ImGui::Button("Output to file")) {
-            write_OBJ(reconstructedSurface.positions, cfg::torusTri);
+            write_OBJ(reconstructedSurfaceIndexed, cfg::torusTri);
         }
         if (ImGui::Button("Recalculate")) {
             // Wait for GPU to finish processing
             vkDeviceWaitIdle(window.device);
 
             std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
-
-            recalculate_grid(pointCloud, distanceField, reconstructedSurface, ui_config, pointCloudBBox,pBuffer, lBuffer, mBuffer,
+            reconstructedSurfaceIndexed = recalculate_grid(pointCloud, distanceField, reconstructedSurface, ui_config, pointCloudBBox,pBuffer, lBuffer, mBuffer,
                              window, allocator);
 
 

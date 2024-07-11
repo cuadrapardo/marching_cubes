@@ -4,13 +4,14 @@
 
 #include "output_model.hpp"
 #include "../labutils/render_constants.hpp"
+#include "mesh.hpp"
 
 #include <fstream>
 #include <iostream>
 
 /* Given a std::vector of 3d positions where each triplet defines a triangle, output an obj file. */
-void write_OBJ(std::vector<glm::vec3> const& positions, std::string const& filename) {
-    assert(positions.size()%3 == 0); //Must be a multiple of 3
+void write_OBJ(IndexedMesh const& indexedMesh, std::string const& filename) {
+    assert(indexedMesh.positions.size()%3 == 0); //Must be a multiple of 3
 
     std::string out_filename = cfg::reconstructedOBJ;
     std::ofstream objFile(out_filename);
@@ -18,13 +19,21 @@ void write_OBJ(std::vector<glm::vec3> const& positions, std::string const& filen
         std::cerr << "Failed to open file: " << out_filename << "\n";
         return;
     }
-    // Write vertices
-    for (const auto& pos : positions) {
+
+    // Write unique vertices
+    for (unsigned int vertex  = 0 ;vertex < indexedMesh.positions.size(); vertex++) {
+        glm::vec3 pos = indexedMesh.positions[vertex];
         objFile << "v " << pos.x << " " << pos.y << " " << pos.z << "\n";
     }
+
     // Write faces
-    for (size_t i = 0; i < positions.size(); i += 3) {
-        objFile << "f " << i + 1 << " " << i + 2 << " " << i + 3 << "\n";
+    for (unsigned int i = 0; i < indexedMesh.face_indices.size(); i += 3) {
+        objFile << "f ";
+        for (unsigned int j = 0; j < 3; ++j) {
+            int vertex_idx = indexedMesh.face_indices[i + j] + 1; // obj indices are 1 based
+            objFile << vertex_idx << " ";
+        }
+        objFile << "\n";
     }
 
     objFile.close();
