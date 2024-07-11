@@ -64,6 +64,20 @@ std::array<int, 3> HalfEdgeMesh::get_halfedges(unsigned int const& face_idx) {
     return face_halfedges;
 }
 
+float HalfEdgeMesh::get_edge_length(const unsigned int& halfedge) {
+    glm::vec3 const& vertex_to_position = vertex_positions[halfedges_vertex_to[halfedge]];
+    unsigned int vertex_from_idx = get_vertex_from(halfedge);
+    glm::vec3 const& vertex_from_position = vertex_positions[vertex_from_idx];
+    return glm::distance(vertex_to_position,vertex_from_position);
+
+}
+
+
+int HalfEdgeMesh::get_vertex_from(const unsigned int& halfedge) {
+    unsigned int const& previous_he = get_previous_halfedge(halfedge);
+    return halfedges_vertex_to[previous_he];
+}
+
 
 /* Iterates through one ring and returns vertex indices of those belonging to the given vertex's one ring */
 std::unordered_set<unsigned int> HalfEdgeMesh::get_one_ring_vertices(const unsigned int& vertex_idx) {
@@ -99,8 +113,7 @@ void HalfEdgeMesh::set_other_halves() {
          *  We can successfully find a halfedge's other half by finding the edge that fulfills these requirements */
 
         for (auto& halfedge: halfedges) {
-            int previous_he = get_previous_halfedge(halfedge);
-            int vertex_from = halfedges_vertex_to[previous_he];
+            int vertex_from = get_vertex_from(halfedge);
 
             //Find all edges that point towards previous vertex (vertex from)
             for (unsigned int otherhalf = 0; otherhalf < halfedges_vertex_to.size(); otherhalf++) {
@@ -111,8 +124,8 @@ void HalfEdgeMesh::set_other_halves() {
                 //Check if this candidate halfedge is actually the other half
                 int vertex_to = halfedges_vertex_to[halfedge];
                 int vertex_to_candidate = halfedges_vertex_to[otherhalf];
-                int previous_he_candidate = get_previous_halfedge(otherhalf);
-                int vertex_from_candidate = halfedges_vertex_to[previous_he_candidate];
+
+                int vertex_from_candidate = get_vertex_from(otherhalf);
                 if (vertex_from == vertex_to_candidate && vertex_to == vertex_from_candidate) {
                     // Found other half
                     halfedges_opposite[halfedge] = otherhalf;
@@ -216,15 +229,9 @@ HalfEdgeMesh obj_to_halfedge(char const* file_path) {
 
 /* Finds average edge length, useful as a target lentgh for tangential relaxation */
 float HalfEdgeMesh::get_mean_edge_length() {
-    float total_length;
-    for(unsigned int he_idx; he_idx < halfedges_vertex_to.size(); he_idx++){
-        unsigned int previous_he_idx = get_previous_halfedge(he_idx);
-
-        unsigned int vertex_from = halfedges_vertex_to[previous_he_idx];
-        float edge_length = glm::distance(
-                vertex_positions[vertex_from],
-                vertex_positions[halfedges_vertex_to[he_idx]]
-                );
+    float total_length = 0;
+    for(unsigned int he_idx = 0; he_idx < halfedges_vertex_to.size(); he_idx++){
+        float edge_length = get_edge_length(he_idx);
         total_length += edge_length;
     }
     return (total_length / halfedges_vertex_to.size());
@@ -403,7 +410,7 @@ is a legal move if and only if the following conditions are satisfied (proof in 
  * */
 void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx) {
     unsigned int const& vertex_to = halfedges_vertex_to[he_idx];
-    unsigned int const& vertex_from = halfedges_vertex_to[halfedges_opposite[he_idx]];
+    unsigned int const& vertex_from = get_vertex_from(he_idx);
 
     //Iterate through one ring
     std::unordered_set<unsigned int> p_onering = get_one_ring_vertices(vertex_to);
@@ -458,14 +465,9 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx) {
 
 /* Splits all edges longer than high_edge_length at their midpoint */
 void HalfEdgeMesh::split_long_edges(const float& high_edge_length) {
+    std::cout << "Splitting edges longer than " << high_edge_length << std::endl;
     for(unsigned int edge = 0; edge < halfedges_vertex_to.size(); edge++) {
-        glm::vec3 const& vertex_to_position = vertex_positions[halfedges_vertex_to[edge]];
-        unsigned int vertex_from_idx = halfedges_vertex_to[halfedges_opposite[edge]];
-        glm::vec3 const& vertex_from_position = vertex_positions[vertex_from_idx];
-        float edge_length = glm::distance(
-                vertex_to_position,
-                vertex_from_position
-        );
+        float edge_length = get_edge_length(edge);
         if(edge_length < high_edge_length) {
             continue;
         }
@@ -474,7 +476,16 @@ void HalfEdgeMesh::split_long_edges(const float& high_edge_length) {
     }
 }
 
+/* Performs halfedge collapse on edges shorter than the threshold low_edge_length.
+ * The algorithm might create edges which are long and undo the work during the edge split so this function
+ * checks whether that would happen before performing the split. */
 void HalfEdgeMesh::collapse_short_edges(const float& high_edge_length, const float& low_edge_length) {
+    for(unsigned int edge = 0; edge < halfedges_vertex_to.size(); edge++) {
+        if(get_edge_length(edge) >= low_edge_length) { continue; }
+
+//        std::unordered_set<unsigned int> one_ring = get_one_ring_vertices()
+
+    }
 
 }
 

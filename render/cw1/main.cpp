@@ -424,8 +424,12 @@ int main() try
         ImGui::NewFrame();
 
 #if TEST_MODE == EDGE
+
+        ImGui::InputFloat("Target edge length", &ui_config.target_edge_length);
+
         if(ImGui::Button("Split Edges")) {
             edgeTest.split_long_edges( (4.0/3.0f) * ui_config.target_edge_length);
+
             vkDeviceWaitIdle(window.device);
             //Recalculate mesh buffer.
             edgeTestBuffer.vertexCount = 0;
@@ -433,7 +437,16 @@ int main() try
             mBuffer[0] = (std::move(edgeTestBuffer));
 
         }
+
         if(ImGui::Button("Collapse Edges")) {
+            edgeTest.collapse_short_edges((4.0/3.0f) * ui_config.target_edge_length, (4.0/5.0f) * ui_config.target_edge_length );
+
+            vkDeviceWaitIdle(window.device);
+            //Recalculate mesh buffer.
+            edgeTestBuffer.vertexCount = 0;
+            edgeTestBuffer = create_mesh_buffer(edgeTest, window, allocator);
+            mBuffer[0] = (std::move(edgeTestBuffer));
+
         }
         if(ImGui::Button("Flip Edges")) {
         }
@@ -447,8 +460,7 @@ int main() try
             // Wait for GPU to finish processing
             vkDeviceWaitIdle(window.device);
 
-            std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
-            //TODO: Reset to original state
+            //TODO: Reset to original state ie - read obj n so on.
 
 //            recalculate_edge(pointCloud, distanceField, reconstructedSurface, ui_config, pointCloudBBox,pBuffer, lBuffer, mBuffer,
 //                             window, allocator);

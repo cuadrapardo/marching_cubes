@@ -32,6 +32,8 @@ struct HalfEdgeMesh {
     std::array<int, 3> get_halfedges(unsigned int const& face_idx);
     int get_previous_halfedge(unsigned int const& halfedge);
     int get_next_halfedge(unsigned int const& halfedge);
+    int get_vertex_from(unsigned int const& halfedge);
+    float get_edge_length(unsigned int const& halfedge);
     std::unordered_set<unsigned int> get_one_ring_vertices(unsigned int const& vertex_idx);
 
     //Mesh operations
