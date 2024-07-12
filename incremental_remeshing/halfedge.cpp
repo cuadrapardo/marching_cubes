@@ -78,6 +78,10 @@ int HalfEdgeMesh::get_vertex_from(const unsigned int& halfedge) {
     return halfedges_vertex_to[previous_he];
 }
 
+int HalfEdgeMesh::get_face(const unsigned int& halfedge) {
+    return (halfedge/3);
+}
+
 
 /* Iterates through one ring and returns vertex indices of those belonging to the given vertex's one ring */
 std::unordered_set<unsigned int> HalfEdgeMesh::get_one_ring_vertices(const unsigned int& vertex_idx) {
@@ -389,28 +393,26 @@ void HalfEdgeMesh::edge_split(const unsigned int& he_idx) {
 }
 
 /* Halfedge collapse:
+ *  An edge collapse transformation K -> K' that collapses the edge {i, j} ∈ K is a legal move
+ *  if and only if the following conditions are satisfied:
  *
-An edge collapse transformation K -> K' that collapses the edge {i, j} ∈ K
-is a legal move if and only if the following conditions are satisfied (proof in [6]):
-
-1. For all vertices {k} adjacent to both {i} and {j} ({i, k} ∈ K and {j, k} ∈ K),
-   {i, j, k} is a face of K.
-
-2. If {i} and {j} are both boundary vertices, {i, j} is a boundary edge.
-
-3. K has more than 4 vertices if neither {i} nor {j} are boundary vertices,
-   or K has more than 3 vertices if either {i} or {j} are boundary vertices.
-
-   Taken from:
-   Hoppe, H., Derose, T., Duchamp, T., Mcdonald, J. and Stuetzle, Mesh Optimization.
-   Available from: https://www.hhoppe.com/meshopt.pdf.
-
-    //TODO: check if boundary. Right now it is okay to not check as the input is assumed to be from Marching Cubes application
-
- * */
+ * 1. For all vertices {k} adjacent to both {i} and {j} ({i, k} ∈ K and {j, k} ∈ K),
+ * {i, j, k} is a face of K.
+ *
+ * 2. If {i} and {j} are both boundary vertices, {i, j} is a boundary edge.
+ *
+ * 3. K has more than 4 vertices if neither {i} nor {j} are boundary vertices,
+ * or K has more than 3 vertices if either {i} or {j} are boundary vertices.
+ *
+ * In total this operation removes two triangles , one vertex & three edges (6 halfedges).
+ * Removing triangles changes indexing in the face arrays & consequently the halfedge arrays. A way to
+ *  Taken from:
+ * Hoppe, H., Derose, T., Duchamp, T., Mcdonald, J. and Stuetzle, Mesh Optimization.
+ * Available from: https://www.hhoppe.com/meshopt.pdf. */
+//TODO: check if boundary. Right now it is okay to not check as the input is assumed to be from Marching Cubes application
 void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx) {
     unsigned int const& vertex_to = halfedges_vertex_to[he_idx];
-    unsigned int const& vertex_from = get_vertex_from(he_idx);
+    unsigned int const vertex_from = get_vertex_from(he_idx);
 
     //Iterate through one ring
     std::unordered_set<unsigned int> p_onering = get_one_ring_vertices(vertex_to);
@@ -460,7 +462,71 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx) {
         }
     }
 
-    //TODO: Update data structure to reflect edge collapse
+    //Update data structure to reflect edge collapse
+
+    //Remove vertex
+    vertex_positions.erase(vertex_positions.begin() + vertex_from);
+    vertex_outgoing_halfedge.erase(vertex_outgoing_halfedge.begin() + vertex_from);
+
+    //TODO: update vertex normals.
+
+    //Update halfedges pointing to the deleted vertex
+    for(unsigned int halfedge = 0; halfedge < halfedges_vertex_to.size(); halfedge++) {
+        int& curr_vertex_to = halfedges_vertex_to[halfedge];
+        if(curr_vertex_to == vertex_from) {
+            curr_vertex_to = vertex_to;
+        }
+    }
+
+    //Update face indices - all indices bigger than deleted vertex are shifted by -1
+    //                    - Triangles that have the deleted vertex now have the vertex at the other side of the edge (vertex_to)
+    for(unsigned int face = 0; face < faces.size(); face +=3) {
+        for(unsigned int vertex_offset = 0; vertex_offset < 3; vertex_offset++) {
+            unsigned int idx = face + vertex_offset;
+            unsigned int& vertex_idx = faces[idx];
+            if (vertex_idx == vertex_from) { //Replace deleted vertex TODO: maybe don't do this for to be deleted triangles???
+                vertex_idx = vertex_to;
+                continue;
+            }
+            if(vertex_idx > vertex_from) { //Shift indices
+                vertex_idx--;
+            }
+        }
+    }
+
+    //Remove two triangles adjacent to the edge
+
+    //Triangle 0 - triangle belonging to the edge collapsed
+    unsigned int face_idx_0 = get_face(he_idx);
+    //Save other halves to reconnect later on with neighbouring triangles
+    unsigned int he_next_oh = halfedges_opposite[get_next_halfedge(he_idx)];
+    unsigned int he_prev_oh = halfedges_opposite[get_previous_halfedge(he_idx)];
+    //Get he of index 0 within this face (first halfedge of the face)
+    auto halfedges = get_halfedges(face_idx_0);
+
+    //Shift all values above halfedge 2
+    for(unsigned int start_shift = halfedges[2] + 1; start_shift < halfedges_opposite.size(); start_shift++) {
+        halfedges_opposite[start_shift] -= 3; //Deleting 3 halfedges, so shift by 3.
+    }
+    for(auto& outgoing_he : vertex_outgoing_halfedge) {
+        if(outgoing_he > halfedges[2]) {
+            outgoing_he -= 3;
+        }
+    }
+
+    //Delete halfedges
+    for(auto const& halfedge : halfedges ) {
+        halfedges_opposite.erase(halfedges_opposite.begin() + halfedge );
+        halfedges_vertex_to.erase(halfedges_vertex_to.begin() + halfedge );
+//        halfedges_opposite.erase(halfedges_opposite.begin() + opposite ); //DO NOT delete all opposites. Only the one belonging to the edge collapsed ( this will be implicitly deleted when deleting triangle 1)
+    }
+
+    //Triangle 1 - triangle belonging to the other half of the edge collapsed
+    unsigned int face_idx_1 = get_face(he_opposite_idx);
+    //Get he of index 0 within this face (first halfedge of the face)
+
+
+
 }
 
 /* Splits all edges longer than high_edge_length at their midpoint */

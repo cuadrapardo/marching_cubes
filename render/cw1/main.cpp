@@ -215,6 +215,8 @@ int main() try
         vkUpdateDescriptorSets(window.device, numSets, desc, 0, nullptr);
     }
 #if TEST_MODE == ON
+    //TODO: Show points of test cube bigger
+    //TODO: Show each case triangle with a different color.
     PointCloud cube = create_test_scene();
     std::vector<unsigned int> cube_edges = get_test_scene_edges();
     BoundingBox pointCloudBBox = get_bounding_box(cube.positions);

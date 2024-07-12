@@ -34,7 +34,23 @@ struct HalfEdgeMesh {
     int get_next_halfedge(unsigned int const& halfedge);
     int get_vertex_from(unsigned int const& halfedge);
     float get_edge_length(unsigned int const& halfedge);
+    int get_face(unsigned int const& halfedge);
     std::unordered_set<unsigned int> get_one_ring_vertices(unsigned int const& vertex_idx);
+
+    //Removal operations
+    template<typename T>
+    /* Shift indices in given vector to the right of index by shift_value. Used to shift values */
+    void shift_indices(unsigned int const& index, unsigned int const& shift_value,
+                       std::vector<T>& vec) {
+        static_assert(std::is_same<T, int>::value || std::is_same<T, unsigned int>::value,"Template parameter must be either int or unsigned int");
+
+
+    }
+
+    void delete_vertex(unsigned int const& vertex_idx);
+    void delete_face(unsigned int const& face_idx);
+
+    void recalculate_connectivity();
 
     //Mesh operations
     void edge_collapse(unsigned int const& edge_idx);
