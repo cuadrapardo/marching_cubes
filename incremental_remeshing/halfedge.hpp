@@ -16,12 +16,12 @@ struct HalfEdgeMesh {
     std::vector<glm::vec3> vertex_positions;
     std::vector<glm::vec3> vertex_normals;
     std::vector<int> vertex_outgoing_halfedge; // aka. first directed edge of a vertex
+    std::vector<unsigned int> faces; // Every 3 entries is a face. Indexed vertex_positions
 
     // Halfedge information
     std::vector<int> halfedges_opposite; //aka. other halves
     std::vector<int> halfedges_vertex_to;
 
-    std::vector<unsigned int> faces; // Every 3 entries is a face.
 
     void set_other_halves();
 
@@ -48,12 +48,12 @@ struct HalfEdgeMesh {
     }
 
     void delete_vertex(unsigned int const& vertex_idx);
-    void delete_face(unsigned int const& face_idx);
+    void delete_face(unsigned int const& collapsed_he_idx);
 
     void recalculate_connectivity();
 
     //Mesh operations
-    void edge_collapse(unsigned int const& edge_idx);
+    void edge_collapse(unsigned int const& edge_idx, const float& high_edge_length);
     void edge_split(unsigned int const& edge_idx);
     void edge_flip(unsigned int const& edge_idx);
 

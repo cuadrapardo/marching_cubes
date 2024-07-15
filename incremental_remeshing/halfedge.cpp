@@ -82,6 +82,62 @@ int HalfEdgeMesh::get_face(const unsigned int& halfedge) {
     return (halfedge/3);
 }
 
+/* Given a vertex idx, deletes it from: vertex_position, vertex_normal
+void HalfEdgeMesh::delete_vertex(const unsigned int& vertex_idx) {
+
+} ??? Might not be a good idea to implement- t*/
+
+/* Given a he_idx which will be collapsed, deletes face it belongs to, deleting its 3 halfedges.
+ * Reconnects the pair of other halves belonging to the triangle's edges (excluding the collapsed edge) */
+void HalfEdgeMesh::delete_face(const unsigned int& he_idx) {
+    //Triangle belonging to the edge collapsed
+    unsigned int face_idx_0 = get_face(he_idx);
+
+    unsigned int next_he = get_next_halfedge(he_idx);
+    unsigned int prev_he = get_previous_halfedge(he_idx);
+    //Save other halves to reconnect later on with neighbouring triangles
+    unsigned int he_next_oh = halfedges_opposite[next_he];
+    unsigned int he_prev_oh = halfedges_opposite[prev_he];
+
+    unsigned int const& non_edge_vertex = halfedges_vertex_to[get_next_halfedge(he_idx)]; //This vertices' fde will need to be updated.
+                                                                                          // It is the vertex that belongs to an adjacent triangle to the collapsed edge,
+                                                                                          // but isn't at either endpoint of the collapsed edge.
+
+    //Get he of index 0 within this face (first halfedge of the face)
+    auto halfedges = get_halfedges(face_idx_0);
+
+    //Delete halfedges
+    for(auto const& halfedge : halfedges ) {
+        halfedges_opposite.erase(halfedges_opposite.begin() + halfedge );
+        halfedges_vertex_to.erase(halfedges_vertex_to.begin() + halfedge );
+        //Note: opposites are not deleted because they need to be reconnected later on. Those trianlges are not destroyed.
+    }
+
+    //Shift all values above halfedge 2 (last halfedge)
+    for(unsigned int he = 0; he < halfedges_opposite.size(); he++) {
+        if(halfedges_opposite[he] > halfedges[2]) {
+            halfedges_opposite[he] -= 3; //Deleting 3 halfedges, so shift by 3.
+        }
+
+    }
+    for(auto& outgoing_he : vertex_outgoing_halfedge) {
+        if(outgoing_he > halfedges[2]) {
+            outgoing_he -= 3; //Deleting 3 halfedges, so shift by 3.
+        }
+    }
+
+    //Update values of other halves if they were shifted
+    he_next_oh = (he_next_oh > halfedges[2]) ? he_next_oh -3 : he_next_oh;
+    he_prev_oh = (he_prev_oh > halfedges[2]) ? he_prev_oh -3 : he_prev_oh;
+
+    //Reset connectivity of other halves belonging to edges in the deleted triangle
+    halfedges_opposite[he_next_oh] = he_prev_oh;
+    halfedges_opposite[he_prev_oh] = he_next_oh;
+
+    //Reset first directed edges from collapsed triangle
+    vertex_outgoing_halfedge[non_edge_vertex] = he_next_oh;
+}
+
 
 /* Iterates through one ring and returns vertex indices of those belonging to the given vertex's one ring */
 std::unordered_set<unsigned int> HalfEdgeMesh::get_one_ring_vertices(const unsigned int& vertex_idx) {
@@ -91,7 +147,7 @@ std::unordered_set<unsigned int> HalfEdgeMesh::get_one_ring_vertices(const unsig
     one_ring.insert(halfedges_vertex_to[fde]);
     int current_he_idx = get_previous_halfedge(fde);
     assert(halfedges_vertex_to[current_he_idx] == vertex_idx);
-    while(fde != current_he_idx) {
+    while(fde != current_he_idx) { //ISSUE: infinite loop
         unsigned int other_half = halfedges_opposite[current_he_idx];
         if(other_half == fde) {
             break;
@@ -410,13 +466,13 @@ void HalfEdgeMesh::edge_split(const unsigned int& he_idx) {
  * Hoppe, H., Derose, T., Duchamp, T., Mcdonald, J. and Stuetzle, Mesh Optimization.
  * Available from: https://www.hhoppe.com/meshopt.pdf. */
 //TODO: check if boundary. Right now it is okay to not check as the input is assumed to be from Marching Cubes application
-void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx) {
+void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_edge_length) {
     unsigned int const& vertex_to = halfedges_vertex_to[he_idx];
     unsigned int const vertex_from = get_vertex_from(he_idx);
 
     //Iterate through one ring
-    std::unordered_set<unsigned int> p_onering = get_one_ring_vertices(vertex_to);
-    std::unordered_set<unsigned int> q_onering = get_one_ring_vertices(vertex_from);
+    std::unordered_set<unsigned int> p_onering = get_one_ring_vertices(vertex_from);
+    std::unordered_set<unsigned int> q_onering = get_one_ring_vertices(vertex_to);
 
 
 
@@ -427,6 +483,9 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx) {
             intersection.insert(vertex);
         }
     }
+    //Add p & q to the intersection
+    intersection.insert(vertex_to);
+    intersection.insert(vertex_from);
 
     //In order for edge collapse to be legal, vertices which belong to the intersection must form a triangle with v0 and v1 and the target edge
     std::unordered_set<unsigned int> connected_vertices; // Vertices which form triangles with the target edge
@@ -462,21 +521,58 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx) {
         }
     }
 
+    //Even though edge collapse is legal, check whether collapsing this edge would produce a longer edge (and undo work done in edge split)
+    //In order to check this, get the one ring of the vertex that will be deleted. Check what the distance is to the vertex where they will be connected.
+    //If this is larger than the high threshold, do not carry out edge collapse.
+    for(unsigned int he = 0; he < halfedges_vertex_to.size(); he++)  {
+        if(halfedges_vertex_to[he] == vertex_from) {
+            //Check how long the edge would be with the new vertex.
+            unsigned int const& he_vertex_from = get_vertex_from(halfedges_vertex_to[he]);
+            glm::vec3 const& vertex_to_position = vertex_positions[vertex_to]; // Halfedge the collapsed edge points to. (i.e the vertex that will remain after the collapse)
+            glm::vec3 const& vertex_from_position = vertex_positions[he_vertex_from];
+            if(glm::distance(vertex_to_position,vertex_from_position) >= high_edge_length) {
+                return; //Collapsing he_idx will create longer edges.
+            }
+        }
+    }
+
     //Update data structure to reflect edge collapse
+    vertex_outgoing_halfedge[vertex_to] = halfedges_opposite[get_previous_halfedge(halfedges_opposite[he_idx])]; //To avoid clashes, set the fde to an edge which will NOT get collapsed.
+
+    //Remove two triangles adjacent to the edge
+    //Triangle 0 - triangle belonging to the other half of the edge collapsed
+    auto halfedges = get_halfedges(get_face(he_idx));
+    delete_face(he_idx);
+
+    //Triangle 1 - triangle belonging to the other half of the edge collapsed
+    auto updated_he_opposite_idx = ( he_opposite_idx > halfedges[2]) ? he_opposite_idx - 3 : he_opposite_idx;
+    delete_face(updated_he_opposite_idx);
+
 
     //Remove vertex
-    vertex_positions.erase(vertex_positions.begin() + vertex_from);
+    vertex_positions.erase(vertex_positions.begin() + vertex_from); //Indices of all vertices are therefore changed by -1 if of a higher idx than vertex_from
     vertex_outgoing_halfedge.erase(vertex_outgoing_halfedge.begin() + vertex_from);
+
 
     //TODO: update vertex normals.
 
-    //Update halfedges pointing to the deleted vertex
+    //Update halfedges pointing to the deleted vertex.
     for(unsigned int halfedge = 0; halfedge < halfedges_vertex_to.size(); halfedge++) {
         int& curr_vertex_to = halfedges_vertex_to[halfedge];
         if(curr_vertex_to == vertex_from) {
             curr_vertex_to = vertex_to;
         }
+        if(curr_vertex_to > vertex_from) {
+            curr_vertex_to--;
+        }
     }
+
+
+    //Update outgoing halfedge for vertices that might have had ng into account removed halfedges
+    for(unsigned int outgoing_he = 0; outgoing_he < vertex_outgoing_halfedge.size(); outgoing_he++) {
+
+    }
+
 
     //Update face indices - all indices bigger than deleted vertex are shifted by -1
     //                    - Triangles that have the deleted vertex now have the vertex at the other side of the edge (vertex_to)
@@ -494,38 +590,7 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx) {
         }
     }
 
-    //Remove two triangles adjacent to the edge
-
-    //Triangle 0 - triangle belonging to the edge collapsed
-    unsigned int face_idx_0 = get_face(he_idx);
-    //Save other halves to reconnect later on with neighbouring triangles
-    unsigned int he_next_oh = halfedges_opposite[get_next_halfedge(he_idx)];
-    unsigned int he_prev_oh = halfedges_opposite[get_previous_halfedge(he_idx)];
-    //Get he of index 0 within this face (first halfedge of the face)
-    auto halfedges = get_halfedges(face_idx_0);
-
-    //Shift all values above halfedge 2
-    for(unsigned int start_shift = halfedges[2] + 1; start_shift < halfedges_opposite.size(); start_shift++) {
-        halfedges_opposite[start_shift] -= 3; //Deleting 3 halfedges, so shift by 3.
-    }
-    for(auto& outgoing_he : vertex_outgoing_halfedge) {
-        if(outgoing_he > halfedges[2]) {
-            outgoing_he -= 3;
-        }
-    }
-
-    //Delete halfedges
-    for(auto const& halfedge : halfedges ) {
-        halfedges_opposite.erase(halfedges_opposite.begin() + halfedge );
-        halfedges_vertex_to.erase(halfedges_vertex_to.begin() + halfedge );
-//        halfedges_opposite.erase(halfedges_opposite.begin() + opposite ); //DO NOT delete all opposites. Only the one belonging to the edge collapsed ( this will be implicitly deleted when deleting triangle 1)
-    }
-
-    //Triangle 1 - triangle belonging to the other half of the edge collapsed
-    unsigned int face_idx_1 = get_face(he_opposite_idx);
-    //Get he of index 0 within this face (first halfedge of the face)
-
-
+    //CONNECTIVITY IS BROKEN
 
 }
 
@@ -546,11 +611,9 @@ void HalfEdgeMesh::split_long_edges(const float& high_edge_length) {
  * The algorithm might create edges which are long and undo the work during the edge split so this function
  * checks whether that would happen before performing the split. */
 void HalfEdgeMesh::collapse_short_edges(const float& high_edge_length, const float& low_edge_length) {
-    for(unsigned int edge = 0; edge < halfedges_vertex_to.size(); edge++) {
+    for(unsigned int edge = 0; edge < halfedges_vertex_to.size(); edge++) { // IMPORTANT: I will be modifying this as I iterate.
         if(get_edge_length(edge) >= low_edge_length) { continue; }
-
-//        std::unordered_set<unsigned int> one_ring = get_one_ring_vertices()
-
+        edge_collapse(edge, high_edge_length);
     }
 
 }
