@@ -102,40 +102,56 @@ void HalfEdgeMesh::delete_face(const unsigned int& he_idx) {
     unsigned int const& non_edge_vertex = halfedges_vertex_to[get_next_halfedge(he_idx)]; //This vertices' fde will need to be updated.
                                                                                           // It is the vertex that belongs to an adjacent triangle to the collapsed edge,
                                                                                           // but isn't at either endpoint of the collapsed edge.
+    //Update FDE of non_edge_vertex
+    vertex_outgoing_halfedge[non_edge_vertex] = halfedges_opposite[get_next_halfedge(he_idx)];
 
     //Get he of index 0 within this face (first halfedge of the face)
     auto halfedges = get_halfedges(face_idx_0);
 
-    //Delete halfedges
-    for(auto const& halfedge : halfedges ) {
-        halfedges_opposite.erase(halfedges_opposite.begin() + halfedge );
-        halfedges_vertex_to.erase(halfedges_vertex_to.begin() + halfedge );
-        //Note: opposites are not deleted because they need to be reconnected later on. Those trianlges are not destroyed.
-    }
-
-    //Shift all values above halfedge 2 (last halfedge)
-    for(unsigned int he = 0; he < halfedges_opposite.size(); he++) {
-        if(halfedges_opposite[he] > halfedges[2]) {
-            halfedges_opposite[he] -= 3; //Deleting 3 halfedges, so shift by 3.
-        }
-
-    }
-    for(auto& outgoing_he : vertex_outgoing_halfedge) {
-        if(outgoing_he > halfedges[2]) {
-            outgoing_he -= 3; //Deleting 3 halfedges, so shift by 3.
-        }
-    }
-
-    //Update values of other halves if they were shifted
-    he_next_oh = (he_next_oh > halfedges[2]) ? he_next_oh -3 : he_next_oh;
-    he_prev_oh = (he_prev_oh > halfedges[2]) ? he_prev_oh -3 : he_prev_oh;
-
-    //Reset connectivity of other halves belonging to edges in the deleted triangle
+    //Reset connectivity of other halves belonging to edges in the to-be-deleted triangle
     halfedges_opposite[he_next_oh] = he_prev_oh;
     halfedges_opposite[he_prev_oh] = he_next_oh;
 
     //Reset first directed edges from collapsed triangle
     vertex_outgoing_halfedge[non_edge_vertex] = he_next_oh;
+
+    //Flag these for deletion
+    for(int const& he : halfedges) {
+        halfedges_opposite[he] = -1;
+        halfedges_vertex_to[he] = -1;
+    }
+
+
+//    //Shift all values above halfedge 2 (last halfedge)
+//    for(unsigned int he = 0; he < halfedges_opposite.size(); he++) {
+//        if(halfedges_opposite[he] > halfedges[2]) {
+//            halfedges_opposite[he] -= 3; //Deleting 3 halfedges, so shift by 3.
+//        }
+//
+//    }
+//    for(auto& outgoing_he : vertex_outgoing_halfedge) {
+//        if(outgoing_he > halfedges[2]) {
+//            outgoing_he -= 3; //Deleting 3 halfedges, so shift by 3.
+//        }
+//    }
+//
+//    //Update values of other halves if they were shifted
+//    he_next_oh = (he_next_oh > halfedges[2]) ? he_next_oh -3 : he_next_oh;
+//    he_prev_oh = (he_prev_oh > halfedges[2]) ? he_prev_oh -3 : he_prev_oh;
+//
+//    //Reset connectivity of other halves belonging to edges in the deleted triangle
+//    halfedges_opposite[he_next_oh] = he_prev_oh;
+//    halfedges_opposite[he_prev_oh] = he_next_oh;
+//
+//    //Reset first directed edges from collapsed triangle
+//    vertex_outgoing_halfedge[non_edge_vertex] = he_next_oh;
+//
+//    //Delete halfedges
+//    for(auto const& halfedge : halfedges ) {
+//        halfedges_opposite.erase(halfedges_opposite.begin() + halfedge );
+//        halfedges_vertex_to.erase(halfedges_vertex_to.begin() + halfedge );
+//        //Note: opposites are not deleted because they need to be reconnected later on. Those trianlges are not destroyed.
+//    }
 }
 
 
@@ -536,22 +552,33 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
         }
     }
 
+    std::cout << "Collapsing edge " << he_idx <<std::endl;
+    std::cout << "Halfedge Vertex TO " << vertex_to <<std::endl;
+    for(unsigned int counter = 0; counter < halfedges_vertex_to.size(); counter++) {
+        std::cout << "Index " << counter << "   Vertex "<< halfedges_vertex_to[counter] << "    OH " << halfedges_opposite[counter] << std::endl;
+    }
+    for(unsigned int v = 0; v < vertex_positions.size(); v++) {
+        std::cout << "Vertex " << v << "    Position " << vertex_positions[v].x <<" " << vertex_positions[v].y << " " <<vertex_positions[v].z <<  "  FDE " << vertex_outgoing_halfedge[v] << std::endl;
+    }
+    for(unsigned int f = 0; f < faces.size()-3; f+=3){
+        std::cout << "Face " << f/3 << "  Vertices: " << faces[f]  << " "<< faces[f+1]  << " " << faces[f+2]  << std::endl;
+    }
+
+
+
     //Update data structure to reflect edge collapse
     vertex_outgoing_halfedge[vertex_to] = halfedges_opposite[get_previous_halfedge(halfedges_opposite[he_idx])]; //To avoid clashes, set the fde to an edge which will NOT get collapsed.
 
-    //Remove two triangles adjacent to the edge
+    //Flag the halfedges of the two triangles adjacent to the edge for deletion.
     //Triangle 0 - triangle belonging to the other half of the edge collapsed
-    auto halfedges = get_halfedges(get_face(he_idx));
+    unsigned int deleted_face_0 = get_face(he_idx);
+    auto deleted_halfedges_0 = get_halfedges(deleted_face_0);
     delete_face(he_idx);
 
     //Triangle 1 - triangle belonging to the other half of the edge collapsed
-    auto updated_he_opposite_idx = ( he_opposite_idx > halfedges[2]) ? he_opposite_idx - 3 : he_opposite_idx;
-    delete_face(updated_he_opposite_idx);
-
-
-    //Remove vertex
-    vertex_positions.erase(vertex_positions.begin() + vertex_from); //Indices of all vertices are therefore changed by -1 if of a higher idx than vertex_from
-    vertex_outgoing_halfedge.erase(vertex_outgoing_halfedge.begin() + vertex_from);
+    unsigned int deleted_face_1 = get_face(he_opposite_idx);
+    auto deleted_halfedges_1 = get_halfedges(deleted_face_1);
+    delete_face(he_opposite_idx);
 
 
     //TODO: update vertex normals.
@@ -559,36 +586,164 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
     //Update halfedges pointing to the deleted vertex.
     for(unsigned int halfedge = 0; halfedge < halfedges_vertex_to.size(); halfedge++) {
         int& curr_vertex_to = halfedges_vertex_to[halfedge];
+        if(curr_vertex_to == -1) { continue; } // This halfedge is flagged for deletion, continue
         if(curr_vertex_to == vertex_from) {
             curr_vertex_to = vertex_to;
         }
-        if(curr_vertex_to > vertex_from) {
-            curr_vertex_to--;
+    }
+
+    //TODO: add check: set outgoing he to -1 if it is to be deleted. Then assert that no he in vertex_outgoing_halfedge is -1.
+
+    //Update halfedge indices
+    for(unsigned int halfedge = 0; halfedge < halfedges_opposite.size(); halfedge++) {
+        auto curr_he = halfedges_opposite[halfedge];
+        if(curr_he == -1) { continue; }
+        if(curr_he > deleted_halfedges_0[2]) { //If the idx of the opposite is above the deleted he index for face 0, shift by -3
+            halfedges_opposite[halfedge] -=3;
+        }
+        if(curr_he > deleted_halfedges_1[2]) { //If the idx of the opposite is above the deleted he index for face 1, shift by -3
+            halfedges_opposite[halfedge] -=3;
+        }
+    }
+    for(unsigned int vertex = 0; vertex < vertex_outgoing_halfedge.size(); vertex++) {
+        auto outgoing_he = vertex_outgoing_halfedge[vertex];
+        assert(outgoing_he != -1); // All FDE should have been redirected beforehand if they were going to be deleted.
+        if(outgoing_he > deleted_halfedges_0[2]) { //If the idx of the opposite is above the deleted he index for face 0, shift by -3
+            vertex_outgoing_halfedge[vertex] -=3;
+        }
+        if(outgoing_he > deleted_halfedges_1[2]) { //If the idx of the opposite is above the deleted he index for face 1, shift by -3
+            vertex_outgoing_halfedge[vertex] -=3;
+        }
+    }
+    //Update faces - 2 will be deleted ??? UNTESTED
+    for(unsigned int face_idx = 0; face_idx < faces.size()/3; face_idx++) {
+        auto face_halfedges = get_halfedges(face_idx);
+        unsigned int delete_he_counter = 0;
+        for(auto he : face_halfedges) {
+            if(he == -1){
+                delete_he_counter++;
+            }
+        }
+        if(delete_he_counter == 3) {
+            //All of this faces' halfedges will be deleted. Flag face for deletion.
+            faces[face_idx*3 + 0] = -1;
+            faces[face_idx*3 + 1] = -1;
+            faces[face_idx*3 + 2] = -1;
+        }
+    }
+    //Delete flagged faces
+    for (auto it = faces.begin(); it != faces.end();) {
+        // Check if the current face is flagged for deletion
+        if (*it == -1 && *(it + 1) == -1 && *(it + 2) == -1) {
+            // Erase the face (3 elements)
+            it = faces.erase(it, it + 3);
+        } else {
+            // Move to the next face
+            it += 3;
+        }
+    }
+
+    //Update vertex indices in faces
+    for(auto& vertex : faces ) {
+        if(vertex == vertex_from) {
+            vertex = vertex_to;
+        }
+        if(vertex > vertex_from) {
+            vertex--;
+        }
+    }
+
+    //Update vertex indices in vertex_to
+    for(auto& vertex : halfedges_vertex_to) {
+        if(vertex == -1) { continue;}
+        if(vertex == vertex_from) {
+            vertex = vertex_to;
+        }
+        if(vertex > vertex_from) {
+            vertex--;
+        }
+    }
+
+    //Remove vertex
+    vertex_positions.erase(vertex_positions.begin() + vertex_from);
+    vertex_outgoing_halfedge.erase(vertex_outgoing_halfedge.begin() + vertex_from);
+
+    //Remove halfedges
+    auto it_opposite = halfedges_opposite.begin();
+    auto it_vertex_to = halfedges_vertex_to.begin();
+
+    while (it_opposite != halfedges_opposite.end() && it_vertex_to != halfedges_vertex_to.end()) {
+        if (*it_opposite == -1 || *it_vertex_to == -1) {
+            it_opposite = halfedges_opposite.erase(it_opposite);
+            it_vertex_to = halfedges_vertex_to.erase(it_vertex_to);
+        } else {
+            ++it_opposite;
+            ++it_vertex_to;
         }
     }
 
 
-    //Update outgoing halfedge for vertices that might have had ng into account removed halfedges
-    for(unsigned int outgoing_he = 0; outgoing_he < vertex_outgoing_halfedge.size(); outgoing_he++) {
 
-    }
+
+
+
+//    for (auto it = faces.begin(); it != faces.end(); ) {
+//        unsigned int face_idx = std::distance(faces.begin(), it) / 3;
+//        auto face_halfedges = get_halfedges(face_idx);
+//        unsigned int delete_he_counter = 0;
+//        for (auto he : face_halfedges) {
+//            if (he == -1) {
+//                delete_he_counter++;
+//            }
+//        }
+//        if (delete_he_counter == 3) {
+//            // All of this face's halfedges will be deleted. Erase the face.
+//            it = faces.erase(it, it + 3);
+//        } else {
+//            it += 3;
+//        }
+//    }
+
+    //Update vertices - 1 will be deleted
+
+
 
 
     //Update face indices - all indices bigger than deleted vertex are shifted by -1
     //                    - Triangles that have the deleted vertex now have the vertex at the other side of the edge (vertex_to)
-    for(unsigned int face = 0; face < faces.size(); face +=3) {
-        for(unsigned int vertex_offset = 0; vertex_offset < 3; vertex_offset++) {
-            unsigned int idx = face + vertex_offset;
-            unsigned int& vertex_idx = faces[idx];
-            if (vertex_idx == vertex_from) { //Replace deleted vertex TODO: maybe don't do this for to be deleted triangles???
-                vertex_idx = vertex_to;
-                continue;
-            }
-            if(vertex_idx > vertex_from) { //Shift indices
-                vertex_idx--;
-            }
-        }
+//    for(unsigned int face = 0; face < faces.size(); face +=3) {
+//        for(unsigned int vertex_offset = 0; vertex_offset < 3; vertex_offset++) {
+//            unsigned int idx = face + vertex_offset;
+//            unsigned int& vertex_idx = faces[idx];
+//            if (vertex_idx == vertex_from) { //Replace deleted vertex TODO: maybe don't do this for to be deleted triangles???
+//                vertex_idx = vertex_to;
+//                continue;
+//            }
+//            if(vertex_idx > vertex_from) { //Shift indices
+//                vertex_idx--;
+//            }
+//        }
+//    }
+//
+//    //Remove vertex
+//    vertex_positions.erase(vertex_positions.begin() + vertex_from); //Indices of all vertices are therefore changed by -1 if of a higher idx than vertex_from
+//    vertex_outgoing_halfedge.erase(vertex_outgoing_halfedge.begin() + vertex_from);
+
+
+    std::cout << "FINISHED COLLAPSE:"  << std::endl;
+
+    std::cout << "Collapsing edge " << he_idx <<std::endl;
+    std::cout << "Halfedge Vertex TO " << vertex_to <<std::endl; // ???
+    for(unsigned int counter = 0; counter < halfedges_vertex_to.size(); counter++) {
+        std::cout << "Index " << counter << "   Vertex "<< halfedges_vertex_to[counter] << "    OH " << halfedges_opposite[counter] << std::endl;
     }
+    for(unsigned int v = 0; v < vertex_positions.size(); v++) {
+        std::cout << "Vertex " << v << "    Position " << vertex_positions[v].x <<" " << vertex_positions[v].y << " " <<vertex_positions[v].z <<  "  FDE " << vertex_outgoing_halfedge[v] << std::endl;
+    }
+    for(unsigned int f = 0; f < faces.size()-3; f+=3){
+        std::cout << "Face " << f/3 << "  Vertices: " << faces[f]  << " "<< faces[f+1]  << " " << faces[f+2]  << std::endl;
+    }
+
 
     //CONNECTIVITY IS BROKEN
 
