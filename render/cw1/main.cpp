@@ -459,13 +459,16 @@ int main() try
         }
 
         if (ImGui::Button("Reset")) {
+            edgeTest.reset();
+            edgeTest = obj_to_halfedge(cfg::edgeTestOBJ);
             // Wait for GPU to finish processing
             vkDeviceWaitIdle(window.device);
 
-            //TODO: Reset to original state ie - read obj n so on.
+            //Recalculate mesh buffer.
+            edgeTestBuffer.vertexCount = 0;
+            edgeTestBuffer = create_mesh_buffer(edgeTest, window, allocator);
+            mBuffer[0] = (std::move(edgeTestBuffer));
 
-//            recalculate_edge(pointCloud, distanceField, reconstructedSurface, ui_config, pointCloudBBox,pBuffer, lBuffer, mBuffer,
-//                             window, allocator);
         }
 
 

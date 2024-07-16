@@ -13,7 +13,14 @@
 #include <cassert>
 #include <algorithm>
 
-
+void HalfEdgeMesh::reset() {
+    vertex_positions.clear();
+    vertex_normals.clear();
+    vertex_outgoing_halfedge.clear();
+    faces.clear();
+    halfedges_opposite.clear();
+    halfedges_vertex_to.clear();
+}
 
 int HalfEdgeMesh::get_next_halfedge(unsigned int const& halfedge_idx) {
     //Get index of face
@@ -163,7 +170,7 @@ std::unordered_set<unsigned int> HalfEdgeMesh::get_one_ring_vertices(const unsig
     one_ring.insert(halfedges_vertex_to[fde]);
     int current_he_idx = get_previous_halfedge(fde);
     assert(halfedges_vertex_to[current_he_idx] == vertex_idx);
-    while(fde != current_he_idx) { //ISSUE: infinite loop
+    while(fde != current_he_idx) {
         unsigned int other_half = halfedges_opposite[current_he_idx];
         if(other_half == fde) {
             break;
@@ -482,7 +489,7 @@ void HalfEdgeMesh::edge_split(const unsigned int& he_idx) {
  * Hoppe, H., Derose, T., Duchamp, T., Mcdonald, J. and Stuetzle, Mesh Optimization.
  * Available from: https://www.hhoppe.com/meshopt.pdf. */
 //TODO: check if boundary. Right now it is okay to not check as the input is assumed to be from Marching Cubes application
-void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_edge_length) {
+bool HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_edge_length) {
     unsigned int const& vertex_to = halfedges_vertex_to[he_idx];
     unsigned int const vertex_from = get_vertex_from(he_idx);
 
@@ -526,14 +533,14 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
 
     if(connected_vertices.size() != intersection.size()) {
         //Illegal operation.
-        return;
+        return false;
     }
 
     // Check if all elements are equal (they must be), if not it must mean there are more triangles connecting to p and q which
     // do not form a triangle with edge pq
     for (const int& vertex : intersection) {
         if (connected_vertices.find(vertex) == connected_vertices.end()) {
-            return;
+            return false;
         }
     }
 
@@ -547,25 +554,10 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
             glm::vec3 const& vertex_to_position = vertex_positions[vertex_to]; // Halfedge the collapsed edge points to. (i.e the vertex that will remain after the collapse)
             glm::vec3 const& vertex_from_position = vertex_positions[he_vertex_from];
             if(glm::distance(vertex_to_position,vertex_from_position) >= high_edge_length) {
-                return; //Collapsing he_idx will create longer edges.
+                return false; //Collapsing he_idx will create longer edges.
             }
         }
     }
-
-    std::cout << "Collapsing edge " << he_idx <<std::endl;
-    std::cout << "Halfedge Vertex TO " << vertex_to <<std::endl;
-    for(unsigned int counter = 0; counter < halfedges_vertex_to.size(); counter++) {
-        std::cout << "Index " << counter << "   Vertex "<< halfedges_vertex_to[counter] << "    OH " << halfedges_opposite[counter] << std::endl;
-    }
-    for(unsigned int v = 0; v < vertex_positions.size(); v++) {
-        std::cout << "Vertex " << v << "    Position " << vertex_positions[v].x <<" " << vertex_positions[v].y << " " <<vertex_positions[v].z <<  "  FDE " << vertex_outgoing_halfedge[v] << std::endl;
-    }
-    for(unsigned int f = 0; f < faces.size()-3; f+=3){
-        std::cout << "Face " << f/3 << "  Vertices: " << faces[f]  << " "<< faces[f+1]  << " " << faces[f+2]  << std::endl;
-    }
-
-
-
     //Update data structure to reflect edge collapse
     vertex_outgoing_halfedge[vertex_to] = halfedges_opposite[get_previous_halfedge(halfedges_opposite[he_idx])]; //To avoid clashes, set the fde to an edge which will NOT get collapsed.
 
@@ -592,8 +584,6 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
         }
     }
 
-    //TODO: add check: set outgoing he to -1 if it is to be deleted. Then assert that no he in vertex_outgoing_halfedge is -1.
-
     //Update halfedge indices
     for(unsigned int halfedge = 0; halfedge < halfedges_opposite.size(); halfedge++) {
         auto curr_he = halfedges_opposite[halfedge];
@@ -615,7 +605,7 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
             vertex_outgoing_halfedge[vertex] -=3;
         }
     }
-    //Update faces - 2 will be deleted ??? UNTESTED
+    //Update faces - 2 will be deleted
     for(unsigned int face_idx = 0; face_idx < faces.size()/3; face_idx++) {
         auto face_halfedges = get_halfedges(face_idx);
         unsigned int delete_he_counter = 0;
@@ -682,70 +672,7 @@ void HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
         }
     }
 
-
-
-
-
-
-//    for (auto it = faces.begin(); it != faces.end(); ) {
-//        unsigned int face_idx = std::distance(faces.begin(), it) / 3;
-//        auto face_halfedges = get_halfedges(face_idx);
-//        unsigned int delete_he_counter = 0;
-//        for (auto he : face_halfedges) {
-//            if (he == -1) {
-//                delete_he_counter++;
-//            }
-//        }
-//        if (delete_he_counter == 3) {
-//            // All of this face's halfedges will be deleted. Erase the face.
-//            it = faces.erase(it, it + 3);
-//        } else {
-//            it += 3;
-//        }
-//    }
-
-    //Update vertices - 1 will be deleted
-
-
-
-
-    //Update face indices - all indices bigger than deleted vertex are shifted by -1
-    //                    - Triangles that have the deleted vertex now have the vertex at the other side of the edge (vertex_to)
-//    for(unsigned int face = 0; face < faces.size(); face +=3) {
-//        for(unsigned int vertex_offset = 0; vertex_offset < 3; vertex_offset++) {
-//            unsigned int idx = face + vertex_offset;
-//            unsigned int& vertex_idx = faces[idx];
-//            if (vertex_idx == vertex_from) { //Replace deleted vertex TODO: maybe don't do this for to be deleted triangles???
-//                vertex_idx = vertex_to;
-//                continue;
-//            }
-//            if(vertex_idx > vertex_from) { //Shift indices
-//                vertex_idx--;
-//            }
-//        }
-//    }
-//
-//    //Remove vertex
-//    vertex_positions.erase(vertex_positions.begin() + vertex_from); //Indices of all vertices are therefore changed by -1 if of a higher idx than vertex_from
-//    vertex_outgoing_halfedge.erase(vertex_outgoing_halfedge.begin() + vertex_from);
-
-
-    std::cout << "FINISHED COLLAPSE:"  << std::endl;
-
-    std::cout << "Collapsing edge " << he_idx <<std::endl;
-    std::cout << "Halfedge Vertex TO " << vertex_to <<std::endl; // ???
-    for(unsigned int counter = 0; counter < halfedges_vertex_to.size(); counter++) {
-        std::cout << "Index " << counter << "   Vertex "<< halfedges_vertex_to[counter] << "    OH " << halfedges_opposite[counter] << std::endl;
-    }
-    for(unsigned int v = 0; v < vertex_positions.size(); v++) {
-        std::cout << "Vertex " << v << "    Position " << vertex_positions[v].x <<" " << vertex_positions[v].y << " " <<vertex_positions[v].z <<  "  FDE " << vertex_outgoing_halfedge[v] << std::endl;
-    }
-    for(unsigned int f = 0; f < faces.size()-3; f+=3){
-        std::cout << "Face " << f/3 << "  Vertices: " << faces[f]  << " "<< faces[f+1]  << " " << faces[f+2]  << std::endl;
-    }
-
-
-    //CONNECTIVITY IS BROKEN
+    return true;
 
 }
 
@@ -766,11 +693,19 @@ void HalfEdgeMesh::split_long_edges(const float& high_edge_length) {
  * The algorithm might create edges which are long and undo the work during the edge split so this function
  * checks whether that would happen before performing the split. */
 void HalfEdgeMesh::collapse_short_edges(const float& high_edge_length, const float& low_edge_length) {
-    for(unsigned int edge = 0; edge < halfedges_vertex_to.size(); edge++) { // IMPORTANT: I will be modifying this as I iterate.
-        if(get_edge_length(edge) >= low_edge_length) { continue; }
-        edge_collapse(edge, high_edge_length);
-    }
+    unsigned int edge = 0;
+    while (edge < halfedges_vertex_to.size()) {
+        if (get_edge_length(edge) >= low_edge_length) {
+            edge++;
+            continue;
+        }
+        bool collapsed = edge_collapse(edge, high_edge_length);
+        if(!collapsed) {edge++;}
 
+//        if(collapsed) { TEST- only collapse 1 edge
+//            return;
+//        }
+    }
 }
 
 /* Performs remeshing according to procedures described in

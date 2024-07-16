@@ -27,6 +27,8 @@ struct HalfEdgeMesh {
 
     bool check_manifold();
 
+    void reset();
+
 
     // Helper functions
     std::array<int, 3> get_halfedges(unsigned int const& face_idx);
@@ -53,7 +55,7 @@ struct HalfEdgeMesh {
     void recalculate_connectivity();
 
     //Mesh operations
-    void edge_collapse(unsigned int const& edge_idx, const float& high_edge_length);
+    bool edge_collapse(unsigned int const& edge_idx, const float& high_edge_length);
     void edge_split(unsigned int const& edge_idx);
     void edge_flip(unsigned int const& edge_idx);
 
