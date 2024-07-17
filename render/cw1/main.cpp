@@ -478,6 +478,18 @@ int main() try
 
         }
 
+        if (ImGui::Button("Remesh")) {
+            edgeTest.remesh(ui_config.target_edge_length);
+            // Wait for GPU to finish processing
+            vkDeviceWaitIdle(window.device);
+
+            //Recalculate mesh buffer.
+            edgeTestBuffer.vertexCount = 0;
+            edgeTestBuffer = create_mesh_buffer(edgeTest, window, allocator);
+            mBuffer[0] = (std::move(edgeTestBuffer));
+
+        }
+
         if (ImGui::Button("Output to file")) {
             write_OBJ(edgeTest, cfg::torusTri);
         }

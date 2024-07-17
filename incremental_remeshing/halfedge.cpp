@@ -99,10 +99,29 @@ std::array<unsigned int, 3> HalfEdgeMesh::get_face_vertices(unsigned int const& 
     return vertices;
 };
 
-/* Given a vertex idx, deletes it from: vertex_position, vertex_normal
-void HalfEdgeMesh::delete_vertex(const unsigned int& vertex_idx) {
+/* Following implementation seen in : https://iquilezles.org/articles/normals/ */
+void HalfEdgeMesh::calculate_normals() {
+    vertex_normals.resize(vertex_positions.size());
+    for( int i=0; i < vertex_positions.size(); i++ ) vertex_normals[i] = glm::vec3(0.0f);
 
-} ??? Might not be a good idea to implement- t*/
+    for( int i=0; i< faces.size()/3 ; i++ )
+    {
+        const int ia = faces[i + 0];
+        const int ib = faces[i + 1];
+        const int ic = faces[i + 2];
+
+        const glm::vec3 e1 = vertex_positions[ia] - vertex_positions[ib];
+        const glm::vec3 e2 = vertex_positions[ic] - vertex_positions[ib];
+        const glm::vec3 no = glm::cross( e1, e2 );
+
+        vertex_normals[ia] += no;
+        vertex_normals[ib] += no;
+        vertex_normals[ic] += no;
+    }
+
+    for( int i=0; i< vertex_positions.size(); i++ ) vertex_normals[i] = glm::normalize( vertex_normals[i] );
+}
+
 
 /* Given a he_idx which will be collapsed, deletes face it belongs to, deleting its 3 halfedges.
  * Reconnects the pair of other halves belonging to the triangle's edges (excluding the collapsed edge) */
@@ -853,12 +872,16 @@ void HalfEdgeMesh::remesh(float const& input_target_edge_length) {
     } else {
         target_edge_length = input_target_edge_length;
     }
-    float low = 4/5 * target_edge_length; // the thresholds 4/5 and 4/3
-    float high = 4/3 * target_edge_length; // are essential to converge to a uniform edge length
+    float low = 4.0f/5.0f * target_edge_length; // the thresholds 4/5 and 4/3
+    float high = 4.0f/3.0f * target_edge_length; // are essential to converge to a uniform edge length
 
     split_long_edges(high);
 
     collapse_short_edges(high, low);
+
+    equalize_valences();
+
+    calculate_normals();
 
 
 }

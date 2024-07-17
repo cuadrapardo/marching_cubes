@@ -34,6 +34,7 @@ struct HalfEdgeMesh {
     void reset();
 
 
+
     // Helper functions
     std::array<int, 3> get_halfedges(unsigned int const& face_idx);
     int get_previous_halfedge(unsigned int const& halfedge);
@@ -44,12 +45,12 @@ struct HalfEdgeMesh {
     std::array<unsigned int, 3 > get_face_vertices(unsigned int const& face);
     std::unordered_set<unsigned int> get_one_ring_vertices(unsigned int const& vertex_idx);
 
-    void delete_vertex(unsigned int const& vertex_idx);
-    void delete_face(unsigned int const& collapsed_he_idx);
+    void calculate_normals();
 
-    void recalculate_connectivity();
+
 
     //Mesh operations
+    void delete_face(unsigned int const& collapsed_he_idx);
     bool edge_collapse(unsigned int const& edge_idx, const float& high_edge_length);
     void edge_split(unsigned int const& edge_idx);
     void edge_flip(unsigned int const& edge_idx);
