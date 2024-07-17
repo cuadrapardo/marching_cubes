@@ -47,6 +47,11 @@ Mesh::Mesh(IndexedMesh const& indexed_mesh) {
     }
 }
 
+IndexedMesh::IndexedMesh(const HalfEdgeMesh& halfEdgeMesh) {
+    positions = halfEdgeMesh.vertex_positions;
+    face_indices = halfEdgeMesh.faces;
+}
+
 
 MeshBuffer create_mesh_buffer(Mesh const& mesh, labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
 

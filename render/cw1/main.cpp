@@ -471,6 +471,10 @@ int main() try
 
         }
 
+        if (ImGui::Button("Output to file")) {
+            write_OBJ(edgeTest, cfg::torusTri);
+        }
+
 
 #endif
 #if TEST_MODE == OFF

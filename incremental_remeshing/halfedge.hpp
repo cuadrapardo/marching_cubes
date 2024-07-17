@@ -39,16 +39,6 @@ struct HalfEdgeMesh {
     int get_face(unsigned int const& halfedge);
     std::unordered_set<unsigned int> get_one_ring_vertices(unsigned int const& vertex_idx);
 
-    //Removal operations
-    template<typename T>
-    /* Shift indices in given vector to the right of index by shift_value. Used to shift values */
-    void shift_indices(unsigned int const& index, unsigned int const& shift_value,
-                       std::vector<T>& vec) {
-        static_assert(std::is_same<T, int>::value || std::is_same<T, unsigned int>::value,"Template parameter must be either int or unsigned int");
-
-
-    }
-
     void delete_vertex(unsigned int const& vertex_idx);
     void delete_face(unsigned int const& collapsed_he_idx);
 

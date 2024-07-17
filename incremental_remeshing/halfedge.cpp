@@ -489,6 +489,7 @@ void HalfEdgeMesh::edge_split(const unsigned int& he_idx) {
  * Hoppe, H., Derose, T., Duchamp, T., Mcdonald, J. and Stuetzle, Mesh Optimization.
  * Available from: https://www.hhoppe.com/meshopt.pdf. */
 //TODO: check if boundary. Right now it is okay to not check as the input is assumed to be from Marching Cubes application
+//ISSUE: I think there is an issue with the triangle order (some are clockwise)
 bool HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_edge_length) {
     unsigned int const& vertex_to = halfedges_vertex_to[he_idx];
     unsigned int const vertex_from = get_vertex_from(he_idx);

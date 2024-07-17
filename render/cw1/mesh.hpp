@@ -27,6 +27,9 @@ struct IndexedMesh {
     std::vector<glm::vec3> positions;
     std::vector<unsigned int> face_indices;
 
+    IndexedMesh() = default;
+    IndexedMesh(HalfEdgeMesh const& halfEdgeMesh);
+
 
 };
 
