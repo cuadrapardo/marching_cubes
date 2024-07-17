@@ -855,6 +855,28 @@ void HalfEdgeMesh::equalize_valences() {
 
 }
 
+/* Iterative smoothing filter for the mesh. Vertex movement is constrained to the vertex tangent plane */
+void HalfEdgeMesh::tangential_relaxation() {
+    for(unsigned int vertex_idx = 0; vertex_idx < vertex_positions.size(); vertex_idx++ ) {
+        glm::vec3 const& position = vertex_positions[vertex_idx];
+        glm::vec3 const& normal = vertex_normals[vertex_idx];
+
+        auto one_ring = get_one_ring_vertices(vertex_idx);
+        glm::vec3 barycentre = glm::vec3{0.0f, 0.0f, 0.0f};
+
+        for(auto const& vertex : one_ring) {
+            barycentre = barycentre + vertex_positions[vertex];
+        }
+        barycentre = barycentre / (float)one_ring.size();
+
+        glm::vec3 updated_position = barycentre + glm::dot(normal, (position - barycentre)) * normal;
+
+        vertex_positions[vertex_idx] = updated_position;
+
+    }
+
+}
+
 
 
 /* Performs remeshing according to procedures described in
@@ -882,6 +904,8 @@ void HalfEdgeMesh::remesh(float const& input_target_edge_length) {
     equalize_valences();
 
     calculate_normals();
+
+    tangential_relaxation();
 
 
 }
