@@ -451,6 +451,13 @@ int main() try
 
         }
         if(ImGui::Button("Flip Edges")) {
+            edgeTest.equalize_valences();
+            vkDeviceWaitIdle(window.device);
+            //Recalculate mesh buffer.
+            edgeTestBuffer.vertexCount = 0;
+            edgeTestBuffer = create_mesh_buffer(edgeTest, window, allocator);
+            mBuffer[0] = (std::move(edgeTestBuffer));
+
         }
 
         ImGui::Text("Reconstructed surface %s manifold", ui_config.manifold ? "is" : "is not");

@@ -89,6 +89,16 @@ int HalfEdgeMesh::get_face(const unsigned int& halfedge) {
     return (halfedge/3);
 }
 
+std::array<unsigned int, 3> HalfEdgeMesh::get_face_vertices(unsigned int const& face ) {
+    std::array<unsigned int, 3> vertices;
+
+    vertices[0] = faces[face*3 + 0];
+    vertices[1] = faces[face*3 + 1];
+    vertices[2] = faces[face*3 + 2];
+
+    return vertices;
+};
+
 /* Given a vertex idx, deletes it from: vertex_position, vertex_normal
 void HalfEdgeMesh::delete_vertex(const unsigned int& vertex_idx) {
 
@@ -488,8 +498,7 @@ void HalfEdgeMesh::edge_split(const unsigned int& he_idx) {
  *  Taken from:
  * Hoppe, H., Derose, T., Duchamp, T., Mcdonald, J. and Stuetzle, Mesh Optimization.
  * Available from: https://www.hhoppe.com/meshopt.pdf. */
-//TODO: check if boundary. Right now it is okay to not check as the input is assumed to be from Marching Cubes application
-//ISSUE: I think there is an issue with the triangle order (some are clockwise)
+//TODO: check if boundary. Right now it is okay to not check as the input is assumed to be from Marching Cubes application (and therefore, manifold)
 bool HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_edge_length) {
     unsigned int const& vertex_to = halfedges_vertex_to[he_idx];
     unsigned int const vertex_from = get_vertex_from(he_idx);
@@ -677,6 +686,86 @@ bool HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
 
 }
 
+
+/* Flips one edge (two halfedges)
+ * - Changes the vertex to for 6 halfedges in the triangles adjacent to the edge
+ * - Changes the vertices of 2 faces alongside the edge.
+ * TODO: In theory this can all be done in one function, which is called twice. */
+void HalfEdgeMesh::edge_flip(const unsigned int& he_idx) {
+
+    //Change outgoing he for vertices to avoid them being modified with the edge flip operation
+    auto recalculate_fde = [this](unsigned int const& he_idx, unsigned int const& he_next_idx,  unsigned int const& he_prev_idx ) {
+        const unsigned int& vertex_0 = this->halfedges_vertex_to[he_idx];
+        const unsigned int& vertex_1 = this->halfedges_vertex_to[he_next_idx];
+        const unsigned int& vertex_2 = this->halfedges_vertex_to[he_prev_idx];
+
+        vertex_outgoing_halfedge[vertex_2] = halfedges_opposite[he_prev_idx];
+        vertex_outgoing_halfedge[vertex_0] = halfedges_opposite[get_previous_halfedge(halfedges_opposite[he_idx])];
+        vertex_outgoing_halfedge[vertex_1] = halfedges_opposite[he_next_idx];
+    };
+
+
+    //Triangle belonging to he_idx
+    const unsigned int he_next_idx = get_next_halfedge(he_idx);
+    const unsigned int he_prev_idx = get_previous_halfedge(he_idx);
+    const unsigned int he_prev_oh =  halfedges_opposite[he_prev_idx];
+    const unsigned int he_prev_to = halfedges_vertex_to[he_prev_idx];
+    const unsigned int face_idx_0 = get_face(he_idx);
+
+    //Save copies for later usage, as these values will be modified
+    const unsigned int he_next_oh = halfedges_opposite[he_next_idx];
+    const unsigned int he_next_to = halfedges_vertex_to[he_next_idx];
+
+
+    //Triangle belonging to he_idx's other half
+    const unsigned int oh_idx = halfedges_opposite[he_idx];
+    const unsigned int oh_next_idx = get_next_halfedge(oh_idx);
+    const unsigned int oh_prev_idx = get_previous_halfedge(oh_idx);
+    const unsigned int oh_prev_oh =  halfedges_opposite[oh_prev_idx];
+    const unsigned int oh_prev_to = halfedges_vertex_to[oh_prev_idx];
+    const unsigned int oh_next_oh = halfedges_opposite[oh_next_idx];
+    const unsigned int oh_next_to = halfedges_vertex_to[oh_next_idx];
+
+    const unsigned int oh_vertex_to = halfedges_vertex_to[oh_idx];
+    const unsigned int face_idx_1 = get_face(oh_idx);
+
+    recalculate_fde(he_idx, he_next_idx, he_prev_idx);
+    recalculate_fde(oh_idx, oh_next_idx, oh_prev_idx);
+
+    //Change he_idx's vertex_to
+    halfedges_vertex_to[he_idx] = halfedges_vertex_to[he_next_idx];
+    //Change oh_idx's vertex to
+    halfedges_vertex_to[oh_idx] = halfedges_vertex_to[oh_next_idx];
+
+    //"Switch" values halfedges
+    halfedges_opposite[he_next_idx] = he_prev_oh;
+    halfedges_opposite[he_prev_oh] = he_next_idx;
+    halfedges_vertex_to[he_next_idx] = he_prev_to;
+
+    halfedges_opposite[he_prev_idx] = oh_next_oh;
+    halfedges_opposite[oh_next_oh] = he_prev_idx;
+    halfedges_vertex_to[he_prev_idx] = oh_next_to;
+
+    //Same thing with the other triangle
+    halfedges_opposite[oh_next_idx] = oh_prev_oh;
+    halfedges_opposite[oh_prev_oh] = oh_next_idx;
+    halfedges_vertex_to[oh_next_idx] = oh_prev_to;
+
+    halfedges_opposite[oh_prev_idx] = he_next_oh; //These values have been modified, so use the stored values
+    halfedges_opposite[he_next_oh] = oh_prev_idx;
+    halfedges_vertex_to[oh_prev_idx] = he_next_to;
+
+    //Change the face vertices for the two faces adjacent to the edge
+    faces[face_idx_0*3 + 0] = halfedges_vertex_to[he_idx];
+    faces[face_idx_0*3 + 1] = halfedges_vertex_to[he_next_idx];
+    faces[face_idx_0*3 + 2] = halfedges_vertex_to[he_prev_idx];
+
+    faces[face_idx_1*3 + 0] = halfedges_vertex_to[oh_idx];
+    faces[face_idx_1*3 + 1] = halfedges_vertex_to[oh_next_idx];
+    faces[face_idx_1*3 + 2] = halfedges_vertex_to[oh_prev_idx];
+
+}
+
 /* Splits all edges longer than high_edge_length at their midpoint */
 void HalfEdgeMesh::split_long_edges(const float& high_edge_length) {
     std::cout << "Splitting edges longer than " << high_edge_length << std::endl;
@@ -703,11 +792,51 @@ void HalfEdgeMesh::collapse_short_edges(const float& high_edge_length, const flo
         bool collapsed = edge_collapse(edge, high_edge_length);
         if(!collapsed) {edge++;}
 
-//        if(collapsed) { TEST- only collapse 1 edge
-//            return;
-//        }
     }
 }
+
+/* Equalizes vertex valences by flipping edges.
+ * Checks whether the deviation to the target valence decreases, if not, edge is flipped back */
+void HalfEdgeMesh::equalize_valences() {
+    auto get_deviation = [this](std::unordered_set<unsigned int>& vertices) -> int {
+        int deviation = 0;
+        for(auto const& vertex : vertices) {
+            deviation += abs(get_one_ring_vertices(vertex).size() - INTERIOR_TARGET_VALENCE);
+        }
+        return deviation;
+    };
+
+    for(unsigned int edge = 0; edge < halfedges_vertex_to.size(); edge++ ) {
+        unsigned int face_0 = get_face(edge);
+        unsigned int face_1 = get_face(halfedges_opposite[edge]);
+
+        //Get vertices of two triangles adjacent to halfedges
+        auto vertices_0 = get_face_vertices(face_0);
+        auto vertices_1 = get_face_vertices(face_1);
+
+        std::unordered_set<unsigned int> unique_vertices;
+        for(auto const& vertex : vertices_0) {
+            unique_vertices.insert(vertex);
+
+        }
+        for(auto const& vertex : vertices_1) {
+            unique_vertices.insert(vertex);
+        }
+
+        int pre_flip_deviation = get_deviation(unique_vertices);
+
+        edge_flip(edge);
+
+        int post_flip_deviation = get_deviation(unique_vertices);
+
+        if(pre_flip_deviation <= post_flip_deviation) {
+            edge_flip(edge); // Undo operation if valence was not improved
+        }
+    }
+
+}
+
+
 
 /* Performs remeshing according to procedures described in
  * Botsch, M. and Kobbelt, L. 2004. A remeshing approach to multiresolution modeling.

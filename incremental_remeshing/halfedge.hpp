@@ -5,6 +5,10 @@
 #ifndef MARCHING_CUBES_POINT_CLOUD_HALFEDGE_HPP
 #define MARCHING_CUBES_POINT_CLOUD_HALFEDGE_HPP
 
+constexpr unsigned int INTERIOR_TARGET_VALENCE = 6;
+constexpr unsigned int BOUNDARY_TARGET_VALENCE = 4; //This will be unused since manifold meshes do NOT have boundaries
+
+
 #include <vector>
 #include <array>
 #include <unordered_set>
@@ -37,6 +41,7 @@ struct HalfEdgeMesh {
     int get_vertex_from(unsigned int const& halfedge);
     float get_edge_length(unsigned int const& halfedge);
     int get_face(unsigned int const& halfedge);
+    std::array<unsigned int, 3 > get_face_vertices(unsigned int const& face);
     std::unordered_set<unsigned int> get_one_ring_vertices(unsigned int const& vertex_idx);
 
     void delete_vertex(unsigned int const& vertex_idx);
