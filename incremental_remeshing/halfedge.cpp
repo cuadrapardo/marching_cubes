@@ -12,6 +12,7 @@
 #include <iostream>
 #include <cassert>
 #include <algorithm>
+#include <cmath>
 
 void HalfEdgeMesh::reset() {
     vertex_positions.clear();
@@ -104,7 +105,7 @@ void HalfEdgeMesh::calculate_normals() {
     vertex_normals.resize(vertex_positions.size());
     for( int i=0; i < vertex_positions.size(); i++ ) vertex_normals[i] = glm::vec3(0.0f);
 
-    for( int i=0; i< faces.size()/3 ; i++ )
+    for( int i=0; i< faces.size() ; i+=3 )
     {
         const int ia = faces[i + 0];
         const int ib = faces[i + 1];
@@ -119,8 +120,11 @@ void HalfEdgeMesh::calculate_normals() {
         vertex_normals[ic] += no;
     }
 
-    for( int i=0; i< vertex_positions.size(); i++ ) vertex_normals[i] = glm::normalize( vertex_normals[i] );
+    for( int i=0; i< vertex_positions.size(); i++ ) {
+        vertex_normals[i] = glm::normalize( vertex_normals[i] );
+    }
 }
+
 
 
 /* Given a he_idx which will be collapsed, deletes face it belongs to, deleting its 3 halfedges.
@@ -156,38 +160,6 @@ void HalfEdgeMesh::delete_face(const unsigned int& he_idx) {
         halfedges_opposite[he] = -1;
         halfedges_vertex_to[he] = -1;
     }
-
-
-//    //Shift all values above halfedge 2 (last halfedge)
-//    for(unsigned int he = 0; he < halfedges_opposite.size(); he++) {
-//        if(halfedges_opposite[he] > halfedges[2]) {
-//            halfedges_opposite[he] -= 3; //Deleting 3 halfedges, so shift by 3.
-//        }
-//
-//    }
-//    for(auto& outgoing_he : vertex_outgoing_halfedge) {
-//        if(outgoing_he > halfedges[2]) {
-//            outgoing_he -= 3; //Deleting 3 halfedges, so shift by 3.
-//        }
-//    }
-//
-//    //Update values of other halves if they were shifted
-//    he_next_oh = (he_next_oh > halfedges[2]) ? he_next_oh -3 : he_next_oh;
-//    he_prev_oh = (he_prev_oh > halfedges[2]) ? he_prev_oh -3 : he_prev_oh;
-//
-//    //Reset connectivity of other halves belonging to edges in the deleted triangle
-//    halfedges_opposite[he_next_oh] = he_prev_oh;
-//    halfedges_opposite[he_prev_oh] = he_next_oh;
-//
-//    //Reset first directed edges from collapsed triangle
-//    vertex_outgoing_halfedge[non_edge_vertex] = he_next_oh;
-//
-//    //Delete halfedges
-//    for(auto const& halfedge : halfedges ) {
-//        halfedges_opposite.erase(halfedges_opposite.begin() + halfedge );
-//        halfedges_vertex_to.erase(halfedges_vertex_to.begin() + halfedge );
-//        //Note: opposites are not deleted because they need to be reconnected later on. Those trianlges are not destroyed.
-//    }
 }
 
 
@@ -631,22 +603,7 @@ bool HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
             vertex_outgoing_halfedge[vertex] -=3;
         }
     }
-//    for(unsigned int face_idx = 0; face_idx < faces.size()/3; face_idx++) {
-//        auto face_halfedges = get_halfedges(face_idx);
-//        unsigned int delete_he_counter = 0;
-//        for(auto he : face_halfedges) {
-//            if(he == -1){
-//                delete_he_counter++;
-//            }
-//        }
-//
-//        if(delete_he_counter == 3) { //ISSUE: this NEVEr GETS CALLED.
-//            //All of this faces' halfedges will be deleted. Flag face for deletion.
-//            faces[face_idx*3 + 0] = -1;
-//            faces[face_idx*3 + 1] = -1;
-//            faces[face_idx*3 + 2] = -1;
-//        }
-//    }
+
 
 
     //Update faces - 2 will be deleted
@@ -877,14 +834,26 @@ void HalfEdgeMesh::tangential_relaxation() {
         glm::vec3 const& normal = vertex_normals[vertex_idx];
 
         auto one_ring = get_one_ring_vertices(vertex_idx);
+        if (one_ring.find(4) != one_ring.end()) {
+            assert(!one_ring.empty());
+        } else {
+        }
         glm::vec3 barycentre = glm::vec3{0.0f, 0.0f, 0.0f};
 
-        for(auto const& vertex : one_ring) {
-            barycentre = barycentre + vertex_positions[vertex];
+        for(const auto vertex : one_ring) {
+            barycentre = barycentre + vertex_positions.at(vertex);
         }
+//        assert(!std::isnan(vertex_positions[vertex].x));
+        assert(!std::isnan(barycentre.x));
+         //Issues: Normals can be nan
+         //vertex 4 is a NAN
+
         barycentre = barycentre / (float)one_ring.size();
 
+//        assert(!std::isnan(barycentre.x));
+
         glm::vec3 updated_position = barycentre + glm::dot(normal, (position - barycentre)) * normal;
+        assert(!std::isnan(updated_position.x));
 
         vertex_positions[vertex_idx] = updated_position;
     }
@@ -908,8 +877,8 @@ void HalfEdgeMesh::remesh(float const& input_target_edge_length) {
     } else {
         target_edge_length = input_target_edge_length;
     }
-    float low = 4.0f/5.0f * target_edge_length; // the thresholds 4/5 and 4/3
-    float high = 4.0f/3.0f * target_edge_length; // are essential to converge to a uniform edge length
+    float low = (4.0f/5.0f) * target_edge_length; // the thresholds 4/5 and 4/3
+    float high = (4.0f/3.0f) * target_edge_length; // are essential to converge to a uniform edge length
 
     split_long_edges(high);
 

@@ -294,6 +294,8 @@ int main() try
     marchingCubesMesh.split_long_edges((4.0/3.0f) * ui_config.target_edge_length);
     marchingCubesMesh.collapse_short_edges((4.0/3.0f) * ui_config.target_edge_length, (4.0/5.0f) * ui_config.target_edge_length );
     marchingCubesMesh.equalize_valences();
+    marchingCubesMesh.calculate_normals();
+    marchingCubesMesh.tangential_relaxation();
 //    marchingCubesMesh.edge_flip()
     write_OBJ(marchingCubesMesh, cfg::torusTri);
 
