@@ -9,7 +9,7 @@
 #define ON 1
 #define EDGE 2
 
-#define TEST_MODE EDGE
+#define TEST_MODE OFF
 
 
 #if TEST_MODE == ON

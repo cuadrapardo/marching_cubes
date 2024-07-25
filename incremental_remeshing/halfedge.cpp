@@ -601,9 +601,6 @@ bool HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
     auto deleted_halfedges_1 = get_halfedges(deleted_face_1);
     delete_face(he_opposite_idx);
 
-
-    //TODO: update vertex normals.
-
     //Update halfedges pointing to the deleted vertex.
     for(unsigned int halfedge = 0; halfedge < halfedges_vertex_to.size(); halfedge++) {
         int& curr_vertex_to = halfedges_vertex_to[halfedge];
@@ -634,22 +631,34 @@ bool HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
             vertex_outgoing_halfedge[vertex] -=3;
         }
     }
+//    for(unsigned int face_idx = 0; face_idx < faces.size()/3; face_idx++) {
+//        auto face_halfedges = get_halfedges(face_idx);
+//        unsigned int delete_he_counter = 0;
+//        for(auto he : face_halfedges) {
+//            if(he == -1){
+//                delete_he_counter++;
+//            }
+//        }
+//
+//        if(delete_he_counter == 3) { //ISSUE: this NEVEr GETS CALLED.
+//            //All of this faces' halfedges will be deleted. Flag face for deletion.
+//            faces[face_idx*3 + 0] = -1;
+//            faces[face_idx*3 + 1] = -1;
+//            faces[face_idx*3 + 2] = -1;
+//        }
+//    }
+
+
     //Update faces - 2 will be deleted
-    for(unsigned int face_idx = 0; face_idx < faces.size()/3; face_idx++) {
-        auto face_halfedges = get_halfedges(face_idx);
-        unsigned int delete_he_counter = 0;
-        for(auto he : face_halfedges) {
-            if(he == -1){
-                delete_he_counter++;
-            }
-        }
-        if(delete_he_counter == 3) {
-            //All of this faces' halfedges will be deleted. Flag face for deletion.
-            faces[face_idx*3 + 0] = -1;
-            faces[face_idx*3 + 1] = -1;
-            faces[face_idx*3 + 2] = -1;
-        }
-    }
+
+    faces[deleted_face_0*3 + 0] = -1;
+    faces[deleted_face_0*3 + 1] = -1;
+    faces[deleted_face_0*3 + 2] = -1;
+
+    faces[deleted_face_1*3 + 0] = -1;
+    faces[deleted_face_1*3 + 1] = -1;
+    faces[deleted_face_1*3 + 2] = -1;
+
     //Delete flagged faces
     for (auto it = faces.begin(); it != faces.end();) {
         // Check if the current face is flagged for deletion
@@ -711,7 +720,6 @@ bool HalfEdgeMesh::edge_collapse(const unsigned int& he_idx, const float& high_e
  * - Changes the vertices of 2 faces alongside the edge.
  * TODO: In theory this can all be done in one function, which is called twice. */
 void HalfEdgeMesh::edge_flip(const unsigned int& he_idx) {
-
     //Change outgoing he for vertices to avoid them being modified with the edge flip operation
     auto recalculate_fde = [this](unsigned int const& he_idx, unsigned int const& he_next_idx,  unsigned int const& he_prev_idx ) {
         const unsigned int& vertex_0 = this->halfedges_vertex_to[he_idx];
@@ -735,7 +743,6 @@ void HalfEdgeMesh::edge_flip(const unsigned int& he_idx) {
     const unsigned int he_next_oh = halfedges_opposite[he_next_idx];
     const unsigned int he_next_to = halfedges_vertex_to[he_next_idx];
 
-
     //Triangle belonging to he_idx's other half
     const unsigned int oh_idx = halfedges_opposite[he_idx];
     const unsigned int oh_next_idx = get_next_halfedge(oh_idx);
@@ -747,6 +754,10 @@ void HalfEdgeMesh::edge_flip(const unsigned int& he_idx) {
 
     const unsigned int oh_vertex_to = halfedges_vertex_to[oh_idx];
     const unsigned int face_idx_1 = get_face(oh_idx);
+
+    assert(he_prev_to == halfedges_vertex_to[oh_idx]);
+    assert(he_next_to == halfedges_vertex_to[he_prev_oh]);
+//    assert(he_next_to == oh_prev_to);
 
     recalculate_fde(he_idx, he_next_idx, he_prev_idx);
     recalculate_fde(oh_idx, oh_next_idx, oh_prev_idx);
@@ -773,6 +784,10 @@ void HalfEdgeMesh::edge_flip(const unsigned int& he_idx) {
     halfedges_opposite[oh_prev_idx] = he_next_oh; //These values have been modified, so use the stored values
     halfedges_opposite[he_next_oh] = oh_prev_idx;
     halfedges_vertex_to[oh_prev_idx] = he_next_to;
+
+    assert(halfedges_vertex_to[he_idx] == he_next_to);
+    assert(halfedges_vertex_to[he_next_idx] == oh_vertex_to);
+    assert(halfedges_vertex_to[he_prev_idx] == oh_next_to);
 
     //Change the face vertices for the two faces adjacent to the edge
     faces[face_idx_0*3 + 0] = halfedges_vertex_to[he_idx];
@@ -872,7 +887,6 @@ void HalfEdgeMesh::tangential_relaxation() {
         glm::vec3 updated_position = barycentre + glm::dot(normal, (position - barycentre)) * normal;
 
         vertex_positions[vertex_idx] = updated_position;
-
     }
 
 }

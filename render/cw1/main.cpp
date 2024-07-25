@@ -287,6 +287,18 @@ int main() try
     HalfEdgeMesh marchingCubesMesh = obj_to_halfedge(cfg::reconstructedOBJ);
     ui_config.manifold = marchingCubesMesh.check_manifold();
 
+    //Remeshing Operations
+    ui_config.target_edge_length = marchingCubesMesh.get_mean_edge_length();
+
+//    marchingCubesMesh.remesh(ui_config.target_edge_length);
+    marchingCubesMesh.split_long_edges((4.0/3.0f) * ui_config.target_edge_length);
+    marchingCubesMesh.collapse_short_edges((4.0/3.0f) * ui_config.target_edge_length, (4.0/5.0f) * ui_config.target_edge_length );
+    marchingCubesMesh.equalize_valences();
+//    marchingCubesMesh.edge_flip()
+    write_OBJ(marchingCubesMesh, cfg::torusTri);
+
+
+
 
     //Create buffers for rendering
     PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
@@ -304,9 +316,11 @@ int main() try
 
     std::vector<MeshBuffer> mBuffer;
     if(!reconstructedSurface.positions.empty()) { // Do not create an empty buffer - this will produce an error.
-        MeshBuffer cube_triangles = create_mesh_buffer(reconstructedSurface, window, allocator);
+        MeshBuffer cube_triangles = create_mesh_buffer(marchingCubesMesh, window, allocator);
         mBuffer.push_back(std::move(cube_triangles));
     }
+
+
 #endif
 
 #if TEST_MODE == EDGE
@@ -508,6 +522,8 @@ int main() try
         }
 
         ImGui::End();
+
+        ImGui::Begin("Surface Reconstruction Menu");
         ImGui::Checkbox("View point cloud vertices", &ui_config.vertices);
         ImGui::SliderInt("Point cloud point size",&ui_config.point_cloud_size, ui_config.p_cloud_size_min, ui_config.p_cloud_size_max); //TODO: Implement recalculation
         ImGui::Checkbox("View distance field", &ui_config.distance_field);
@@ -531,9 +547,19 @@ int main() try
             std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
             reconstructedSurfaceIndexed = recalculate_grid(pointCloud, distanceField, reconstructedSurface, ui_config, pointCloudBBox,pBuffer, lBuffer, mBuffer,
                              window, allocator);
-
-
         }
+
+        ImGui::End();
+
+        ImGui::Begin("Remeshing Menu");
+
+
+        ImGui::InputFloat("Target edge length", &ui_config.target_edge_length);
+        ImGui::InputInt("Remeshing iterations", &ui_config.remeshing_iterations);
+
+
+
+        ImGui::End();
 
 #endif
 
