@@ -63,7 +63,7 @@ struct HalfEdgeMesh {
     void tangential_relaxation();
     void project_to_surface();
 
-    void remesh(float const& input_target_edge_length);
+    void remesh(float const& input_target_edge_length, unsigned int const& n_iterations);
 };
 
 HalfEdgeMesh obj_to_halfedge(char const* path);

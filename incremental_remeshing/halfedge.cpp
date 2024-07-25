@@ -870,7 +870,7 @@ void HalfEdgeMesh::tangential_relaxation() {
  * - Collapse short edges
  * - Tangential relaxation (smooth mesh without deformation)
  * Another description of the algorithm can be seen at: Botsch, M. 2010. Polygon mesh processing. Natick, Mass.: A K Peters. pages 100 - 102*/
-void HalfEdgeMesh::remesh(float const& input_target_edge_length) {
+void HalfEdgeMesh::remesh(float const& input_target_edge_length, unsigned int const& n_iterations) {
     float target_edge_length;
     if(input_target_edge_length == 0) {
         target_edge_length = get_mean_edge_length();
@@ -880,15 +880,15 @@ void HalfEdgeMesh::remesh(float const& input_target_edge_length) {
     float low = (4.0f/5.0f) * target_edge_length; // the thresholds 4/5 and 4/3
     float high = (4.0f/3.0f) * target_edge_length; // are essential to converge to a uniform edge length
 
-    split_long_edges(high);
+    for(unsigned int remeshing_iterations = 0; remeshing_iterations < n_iterations; remeshing_iterations++) {
+        split_long_edges(high);
 
-    collapse_short_edges(high, low);
+        collapse_short_edges(high, low);
 
-    equalize_valences();
+        equalize_valences();
 
-    calculate_normals();
+        calculate_normals();
 
-    tangential_relaxation();
-
-
+        tangential_relaxation();
+    }
 }

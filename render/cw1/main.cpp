@@ -290,13 +290,7 @@ int main() try
     //Remeshing Operations
     ui_config.target_edge_length = marchingCubesMesh.get_mean_edge_length();
 
-//    marchingCubesMesh.remesh(ui_config.target_edge_length);
-    marchingCubesMesh.split_long_edges((4.0/3.0f) * ui_config.target_edge_length);
-    marchingCubesMesh.collapse_short_edges((4.0/3.0f) * ui_config.target_edge_length, (4.0/5.0f) * ui_config.target_edge_length );
-    marchingCubesMesh.equalize_valences();
-    marchingCubesMesh.calculate_normals();
-    marchingCubesMesh.tangential_relaxation();
-//    marchingCubesMesh.edge_flip()
+    marchingCubesMesh.remesh(ui_config.target_edge_length, ui_config.remeshing_iterations);
     write_OBJ(marchingCubesMesh, cfg::torusTri);
 
 
