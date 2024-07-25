@@ -26,14 +26,15 @@ struct HalfEdgeMesh {
     std::vector<int> halfedges_opposite; //aka. other halves
     std::vector<int> halfedges_vertex_to;
 
+    //Mesh metrics
+    float average_triangle_area;
+    float triangle_area_range;
+    float mean_triangle_aspect_ratio;
+    float triangle_area_standard_deviation;
 
     void set_other_halves();
-
     bool check_manifold();
-
     void reset();
-
-
 
     // Helper functions
     std::array<int, 3> get_halfedges(unsigned int const& face_idx);
@@ -46,8 +47,6 @@ struct HalfEdgeMesh {
     std::unordered_set<unsigned int> get_one_ring_vertices(unsigned int const& vertex_idx);
 
     void calculate_normals();
-
-
 
     //Mesh operations
     void delete_face(unsigned int const& collapsed_he_idx);
@@ -64,6 +63,10 @@ struct HalfEdgeMesh {
     void project_to_surface();
 
     void remesh(float const& input_target_edge_length, unsigned int const& n_iterations);
+
+    //Mesh metrics
+    float calculate_hausdorff_distance(HalfEdgeMesh& other_mesh);
+    void calculate_triangle_area_metrics();
 };
 
 HalfEdgeMesh obj_to_halfedge(char const* path);

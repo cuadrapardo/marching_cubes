@@ -892,3 +892,59 @@ void HalfEdgeMesh::remesh(float const& input_target_edge_length, unsigned int co
         tangential_relaxation();
     }
 }
+
+/* Mesh triangle quality metrics:
+ * Calculate mean triangle area using Heron's formula
+ * Calculate triangle area range
+ * Calculate mean triangle aspect ratio (Aspect ratio of a triangle is the ratio of the longest edge to shortest edge (so equilateral triangle has aspect ratio 1).
+ *TODO: add standard deviation description
+ * IMPORTANT :  untested */
+void HalfEdgeMesh::calculate_triangle_area_metrics() {
+    float min_area = std::numeric_limits<float>::max();
+    float max_area = std::numeric_limits<float>::min();
+    float total_area, total_aspect_ratio, total_area_squared;
+    for(unsigned int tri = 0; tri < faces.size()/3; tri++) {
+        //Calculate area
+        auto vertices = get_face_vertices(tri);
+        float edge_0_length = glm::distance(vertex_positions[vertices[0]], vertex_positions[vertices[1]]);
+        float edge_1_length = glm::distance(vertex_positions[vertices[1]], vertex_positions[vertices[2]]);
+        float edge_2_length = glm::distance(vertex_positions[vertices[2]], vertex_positions[vertices[0]]); // ??? is glm::distance here fine?
+
+        float half_perimeter = (edge_0_length + edge_1_length + edge_2_length) / 2.0f;
+
+        float area = sqrt(
+                half_perimeter * (half_perimeter - edge_0_length) * (half_perimeter - edge_1_length) * (half_perimeter - edge_2_length)
+                );
+        //Calculate aspect ratio
+        float min_edge = std::min(edge_0_length, edge_1_length);
+        min_edge = std::min(min_edge, edge_2_length);
+        float max_edge = std::max(edge_0_length, edge_1_length);
+        max_edge = std::max(max_edge, edge_2_length);
+
+        float aspect_ratio = max_edge/min_edge;
+
+
+
+        if (area < min_area) {
+            min_area = area;
+        }
+        if (area > max_area) {
+            max_area = area;
+        }
+        total_area += area;
+        total_aspect_ratio += aspect_ratio;
+        total_area_squared += area * area;
+    }
+    average_triangle_area = total_area / ((float)faces.size()/3);
+    mean_triangle_aspect_ratio = total_aspect_ratio / ((float)faces.size()/3);
+    triangle_area_range = max_area - min_area;
+
+    float variance = (total_area_squared/((float)faces.size()/3)) - (average_triangle_area * average_triangle_area);
+    triangle_area_standard_deviation = sqrt(variance);
+}
+
+/* Calculates the range (max - min) of triangle areas of the mesh
+ * TODO: implement */
+float HalfEdgeMesh::calculate_hausdorff_distance(HalfEdgeMesh& other_mesh) {
+
+}
