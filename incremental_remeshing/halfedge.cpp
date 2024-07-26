@@ -895,9 +895,7 @@ void HalfEdgeMesh::remesh(float const& input_target_edge_length, unsigned int co
 /* Mesh triangle quality metrics:
  * Calculate mean triangle area using Heron's formula
  * Calculate triangle area range
- * Calculate mean triangle aspect ratio (Aspect ratio of a triangle is the ratio of the longest edge to shortest edge (so equilateral triangle has aspect ratio 1).
- *TODO: add standard deviation description
- * IMPORTANT :  untested */
+ * Calculate mean triangle aspect ratio (Aspect ratio of a triangle is the ratio of the longest edge to shortest edge (so equilateral triangle has aspect ratio 1).  */
 void HalfEdgeMesh::calculate_triangle_area_metrics() {
     float min_area = std::numeric_limits<float>::max();
     float max_area = std::numeric_limits<float>::min();

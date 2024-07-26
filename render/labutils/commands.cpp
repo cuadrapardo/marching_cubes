@@ -120,7 +120,7 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
         vkCmdDrawIndexed(aCmdBuff, static_cast<uint32_t>(lineBuffers[0].vertex_count), 1, 0, 0, 0);
     }
 
-    if(ui_config.mc_surface) {
+    if(ui_config.mc_surface && !meshBuffers.empty()) {
         //Bind line drawing pipeline
         vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aTrianglePipe);
 
@@ -133,10 +133,20 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
 
         vkCmdDraw(aCmdBuff, meshBuffers[0].vertexCount, 1, 0, 0);
     }
-    if(ui_config.remeshed_surface) {
+    if(ui_config.remeshed_surface && !meshBuffers.empty()) {
         //Bind line drawing pipeline
         vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aTrianglePipe);
+#if TEST_MODE == EDGE
+        VkBuffer buffers[3] {meshBuffers[0].positions.buffer,
+                             meshBuffers[0].colors.buffer,
+                             meshBuffers[0].normals.buffer};
+        VkDeviceSize offsets[3] {};
 
+        vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
+
+        vkCmdDraw(aCmdBuff, meshBuffers[0].vertexCount, 1, 0, 0);
+
+#else
         VkBuffer buffers[3] {meshBuffers[1].positions.buffer,
                              meshBuffers[1].colors.buffer,
                              meshBuffers[1].normals.buffer};
@@ -145,6 +155,8 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
         vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
 
         vkCmdDraw(aCmdBuff, meshBuffers[1].vertexCount, 1, 0, 0);
+
+#endif
     }
     //End the render pass
     vkCmdEndRenderPass(aCmdBuff);

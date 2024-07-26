@@ -3,4 +3,7 @@ _build_
 bin
 lib
 assets
+reconstructed_surface.obj
+marching_cubes_mesh.obj
+remeshed_mesh.obj
 Makefile

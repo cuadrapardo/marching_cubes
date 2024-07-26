@@ -218,6 +218,8 @@ int main() try
 #pragma endregion
 
 #if TEST_MODE == ON
+    ui_config.remeshed_surface = false;
+    ui_config.mc_surface = true;
     //TODO: Show points of test cube bigger
     //TODO: Show each case triangle with a different color.
     PointCloud cube = create_test_scene();
@@ -344,7 +346,7 @@ int main() try
     ui_config.distance_field = false;
     ui_config.grid = false;
     ui_config.flyCamera = true;
-    ui_config.surface = true;
+    ui_config.mc_surface = true;
 
     BoundingBox pointCloudBBox;
     std::vector<PointBuffer> pBuffer;
@@ -356,7 +358,7 @@ int main() try
     MeshBuffer edgeTestBuffer = create_mesh_buffer(edgeTest, window, allocator);
     mBuffer.push_back(std::move(edgeTestBuffer));
 
-    ui_config.manifold = edgeTest.check_manifold();
+    ui_config.remesh_manifold = edgeTest.check_manifold();
 
     ui_config.target_edge_length = edgeTest.get_mean_edge_length();
 
@@ -487,9 +489,9 @@ int main() try
 
         }
 
-        ImGui::Text("Reconstructed surface %s manifold", ui_config.manifold ? "is" : "is not");
+        ImGui::Text("Reconstructed surface %s manifold", ui_config.remesh_manifold ? "is" : "is not");
         if (ImGui::Button("Check manifoldness")) {
-            ui_config.manifold = edgeTest.check_manifold();
+            ui_config.remesh_manifold = edgeTest.check_manifold();
         }
 
         if (ImGui::Button("Reset")) {
@@ -506,7 +508,7 @@ int main() try
         }
 
         if (ImGui::Button("Remesh")) {
-            edgeTest.remesh(ui_config.target_edge_length);
+            edgeTest.remesh(ui_config.target_edge_length,ui_config.remeshing_iterations);
             // Wait for GPU to finish processing
             vkDeviceWaitIdle(window.device);
 
