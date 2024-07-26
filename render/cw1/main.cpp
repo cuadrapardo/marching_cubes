@@ -291,7 +291,7 @@ int main() try
     //Create file and convert to HalfEdge data structure
     write_OBJ(reconstructedSurfaceIndexed, cfg::MC_obj_name);
     HalfEdgeMesh marchingCubesMesh = obj_to_halfedge(cfg::MC_obj_name);
-    ui_config.manifold = marchingCubesMesh.check_manifold();
+    ui_config.mc_manifold = marchingCubesMesh.check_manifold();
 
     //Calculate metrics for MC surface
     std::cout << "Calculating metrics for reconstructed surface" << std::endl;
@@ -321,6 +321,8 @@ int main() try
     std::cout << "Calculating metrics for remeshed surface" << std::endl;
     remeshedMesh.calculate_triangle_area_metrics();
     ui_config.MC_mesh_to_remeshed = remeshedMesh.calculate_hausdorff_distance(marchingCubesMesh.vertex_positions);
+    ui_config.remesh_manifold = remeshedMesh.check_manifold();
+
 
 #pragma endregion
 
@@ -543,11 +545,12 @@ int main() try
         ImGui::Checkbox("View edge color", &ui_config.edge_color);
         ImGui::Checkbox("View Marching Cubes surface", &ui_config.mc_surface);
         ImGui::Checkbox("View Remeshed surface", &ui_config.remeshed_surface);
-        ImGui::Text("Reconstructed surface %s manifold", ui_config.manifold ? "is" : "is not");
+        ImGui::Text("Reconstructed surface %s manifold", ui_config.mc_manifold ? "is" : "is not");
+        ImGui::Text("Remeshed surface %s manifold", ui_config.remesh_manifold ? "is" : "is not");
         ImGui::SliderFloat("Grid Resolution",&ui_config.grid_resolution, ui_config.grid_resolution_min, ui_config.grid_resolution_max);
         ImGui::InputInt("Isovalue", &ui_config.isovalue);
         if (ImGui::Button("Check manifoldness")) {
-            ui_config.manifold = marchingCubesMesh.check_manifold();
+            ui_config.mc_manifold = marchingCubesMesh.check_manifold();
         }
         if (ImGui::Button("Output to file")) {
             write_OBJ(reconstructedSurfaceIndexed, cfg::torusTri);
@@ -561,7 +564,7 @@ int main() try
             reconstructedSurfaceIndexed = recalculate_grid(pointCloud, distanceField, reconstructedSurface, ui_config, pointCloudBBox,pBuffer, lBuffer, mBuffer,
                              window, allocator);
             //Recalculate remeshed surface
-            recalculate_remeshed_mesh(ui_config, window, allocator, mBuffer);
+            remeshedMesh = recalculate_remeshed_mesh(ui_config, window, allocator, mBuffer);
 
         }
 
@@ -575,14 +578,16 @@ int main() try
         ImGui::Begin("Mesh Metrics");
         ImGui::Text("Hausdorff distance between point cloud & MC mesh: %f", ui_config.p_cloud_to_MC_mesh );
         ImGui::Text("Hausdorff distance between MC mesh & final remeshed mesh: %f", ui_config.MC_mesh_to_remeshed );
-//        ImGui::Text("Average triangle area before remesh: %f",  );
-//        ImGui::Text("Average triangle area after remesh: %f" );
-//        ImGui::Text("Triangle area range before remesh: %f" );
-//        ImGui::Text("Triangle area range after remesh: %f" );
-//        ImGui::Text("Average triangle aspect ratio before remesh: %f" );
-//        ImGui::Text("Average triangle aspect ratio after remesh: %f" );
-//        ImGui::Text("Triangle area standard deviation before remesh: %f" );
-//        ImGui::Text("Triangle area standard deviation after remesh: %f" );
+        ImGui::SeparatorText("Triangle Area");
+        ImGui::Text("Average triangle area before remesh: %f", marchingCubesMesh.average_triangle_area );
+        ImGui::Text("Average triangle area after remesh: %f", remeshedMesh.average_triangle_area );
+        ImGui::Text("Triangle area range before remesh: %f", marchingCubesMesh.triangle_area_range );
+        ImGui::Text("Triangle area range after remesh: %f", remeshedMesh.triangle_area_range );
+        ImGui::Text("Triangle area standard deviation before remesh: %f", marchingCubesMesh.triangle_area_standard_deviation );
+        ImGui::Text("Triangle area standard deviation after remesh: %f", remeshedMesh.triangle_area_standard_deviation );
+        ImGui::SeparatorText("Triangle Aspect Ratio");
+        ImGui::Text("Average triangle aspect ratio before remesh: %f", marchingCubesMesh.mean_triangle_aspect_ratio );
+        ImGui::Text("Average triangle aspect ratio after remesh: %f", remeshedMesh.mean_triangle_aspect_ratio );
 
 
 

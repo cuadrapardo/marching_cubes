@@ -99,7 +99,7 @@ IndexedMesh recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, 
     //Create file and convert to HalfEdge data structure
     write_OBJ(case_triangles_indexed, cfg::MC_obj_name);
     HalfEdgeMesh marchingCubesMesh = obj_to_halfedge(cfg::MC_obj_name);
-    ui_config.manifold = marchingCubesMesh.check_manifold();
+    ui_config.mc_manifold = marchingCubesMesh.check_manifold();
 
     //Calculate metrics for MC surface
     std::cout << "Calculating metrics for reconstructed surface" << std::endl;
@@ -121,18 +121,26 @@ IndexedMesh recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, 
     return case_triangles_indexed;
 }
 
-void recalculate_remeshed_mesh(UiConfiguration& ui_config, labutils::VulkanContext const& window, labutils::Allocator const& allocator,std::vector<MeshBuffer>& mBuffer) {
+HalfEdgeMesh recalculate_remeshed_mesh(UiConfiguration& ui_config, labutils::VulkanContext const& window, labutils::Allocator const& allocator,std::vector<MeshBuffer>& mBuffer) {
     HalfEdgeMesh remeshed = obj_to_halfedge(cfg::MC_obj_name);
     remeshed.remesh(ui_config.target_edge_length, ui_config.remeshing_iterations);
     // Wait for GPU to finish processing
     vkDeviceWaitIdle(window.device);
 
-    ui_config.manifold = remeshed.check_manifold();
+    ui_config.remesh_manifold = remeshed.check_manifold();
 
-    IndexedMesh remeshed_idx = remeshed;
     mBuffer[1].vertexCount = 0;
     MeshBuffer remeshedBuffer = create_mesh_buffer(Mesh(remeshed), window, allocator);
     mBuffer[1] = std::move(remeshedBuffer);
+
+    //Calculate metrics for remeshed surface
+    std::cout << "Calculating metrics for remeshed surface" << std::endl;
+    remeshed.calculate_triangle_area_metrics();
+    ui_config.MC_mesh_to_remeshed = remeshed.calculate_hausdorff_distance(remeshed.vertex_positions);
+    ui_config.remesh_manifold = remeshed.check_manifold();
+
+    return remeshed;
+
 }
 
 

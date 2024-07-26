@@ -31,7 +31,7 @@ struct UiConfiguration {
     float target_edge_length = 0.0f;
     int remeshing_iterations = 10;
 
-    bool manifold = false;
+    bool mc_manifold = false, remesh_manifold = false;
     bool flyCamera = true;
 
     //Mesh Metrics: Hausdorff distance
@@ -46,6 +46,6 @@ IndexedMesh recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, 
                       std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer, std::vector<MeshBuffer>& mBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator);
 
-void recalculate_remeshed_mesh(UiConfiguration& ui_config, labutils::VulkanContext const& window, labutils::Allocator const& allocator,std::vector<MeshBuffer>& mBuffer);
+HalfEdgeMesh recalculate_remeshed_mesh(UiConfiguration& ui_config, labutils::VulkanContext const& window, labutils::Allocator const& allocator,std::vector<MeshBuffer>& mBuffer);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_UI_HPP

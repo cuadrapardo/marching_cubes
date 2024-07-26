@@ -759,7 +759,6 @@ void HalfEdgeMesh::edge_flip(const unsigned int& he_idx) {
 
 /* Splits all edges longer than high_edge_length at their midpoint */
 void HalfEdgeMesh::split_long_edges(const float& high_edge_length) {
-    std::cout << "Splitting edges longer than " << high_edge_length << std::endl;
     for(unsigned int edge = 0; edge < halfedges_vertex_to.size(); edge++) {
         float edge_length = get_edge_length(edge);
         if(edge_length < high_edge_length) {
