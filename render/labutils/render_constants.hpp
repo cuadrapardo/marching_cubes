@@ -91,6 +91,9 @@ namespace cfg
 
     constexpr char const* reconstructedOBJ = "reconstructed_surface.obj";
 
+    constexpr char const* MC_obj_name = "marching_cubes_mesh.obj";
+    constexpr char const* remeshed_obj_name = "remeshed_mesh.obj";
+
 
     constexpr VkFormat kDepthFormat = VK_FORMAT_D32_SFLOAT;
 

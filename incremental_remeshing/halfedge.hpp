@@ -65,7 +65,7 @@ struct HalfEdgeMesh {
     void remesh(float const& input_target_edge_length, unsigned int const& n_iterations);
 
     //Mesh metrics
-    float calculate_hausdorff_distance(HalfEdgeMesh& other_mesh);
+    float calculate_hausdorff_distance(std::vector<glm::vec3> const& original_points);
     void calculate_triangle_area_metrics();
 };
 

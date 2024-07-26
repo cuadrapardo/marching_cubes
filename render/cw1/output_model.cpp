@@ -10,10 +10,9 @@
 #include <iostream>
 
 /* Given a std::vector of 3d positions where each triplet defines a triangle, output an obj file. */
-void write_OBJ(IndexedMesh const& indexedMesh, std::string const& filename) {
+void write_OBJ(IndexedMesh const& indexedMesh, std::string const& out_filename) {
     assert(indexedMesh.face_indices.size()%3 == 0); //Must be a multiple of 3
 
-    std::string out_filename = cfg::reconstructedOBJ;
     std::ofstream objFile(out_filename);
     if (!objFile.is_open()) {
         std::cerr << "Failed to open file: " << out_filename << "\n";

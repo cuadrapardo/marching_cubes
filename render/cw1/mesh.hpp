@@ -41,18 +41,11 @@ struct Mesh {
     Mesh();
     // Constructor that initializes a Mesh from a HalfEdgeMesh
     Mesh(HalfEdgeMesh const& halfEdgeMesh);
-    Mesh(IndexedMesh const& indexedMesh);
+    Mesh(IndexedMesh& indexedMesh);
 
     void set_color(glm::vec3 const& color);
     void set_normals(glm::vec3 const& normal);
-
-
-
 };
-
-
-
-
 
 
 

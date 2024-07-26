@@ -120,24 +120,32 @@ void record_commands_textured( VkCommandBuffer aCmdBuff, VkRenderPass aRenderPas
         vkCmdDrawIndexed(aCmdBuff, static_cast<uint32_t>(lineBuffers[0].vertex_count), 1, 0, 0, 0);
     }
 
-    if(ui_config.surface) {
-        for(auto const& meshBuffer : meshBuffers) {
-            //Bind line drawing pipeline
-            vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aTrianglePipe);
+    if(ui_config.mc_surface) {
+        //Bind line drawing pipeline
+        vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aTrianglePipe);
 
-            VkBuffer buffers[3] {meshBuffer.positions.buffer,
-                                 meshBuffer.colors.buffer,
-                                 meshBuffer.normals.buffer};
-            VkDeviceSize offsets[3] {};
+        VkBuffer buffers[3] {meshBuffers[0].positions.buffer,
+                             meshBuffers[0].colors.buffer,
+                             meshBuffers[0].normals.buffer};
+        VkDeviceSize offsets[3] {};
 
-            vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
+        vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
 
-            vkCmdDraw(aCmdBuff, meshBuffer.vertexCount, 1, 0, 0);
-
-        }
-
+        vkCmdDraw(aCmdBuff, meshBuffers[0].vertexCount, 1, 0, 0);
     }
+    if(ui_config.remeshed_surface) {
+        //Bind line drawing pipeline
+        vkCmdBindPipeline(aCmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, aTrianglePipe);
 
+        VkBuffer buffers[3] {meshBuffers[1].positions.buffer,
+                             meshBuffers[1].colors.buffer,
+                             meshBuffers[1].normals.buffer};
+        VkDeviceSize offsets[3] {};
+
+        vkCmdBindVertexBuffers(aCmdBuff, 0, 3, buffers, offsets);
+
+        vkCmdDraw(aCmdBuff, meshBuffers[1].vertexCount, 1, 0, 0);
+    }
     //End the render pass
     vkCmdEndRenderPass(aCmdBuff);
 

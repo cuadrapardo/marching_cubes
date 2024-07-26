@@ -902,7 +902,9 @@ void HalfEdgeMesh::remesh(float const& input_target_edge_length, unsigned int co
 void HalfEdgeMesh::calculate_triangle_area_metrics() {
     float min_area = std::numeric_limits<float>::max();
     float max_area = std::numeric_limits<float>::min();
-    float total_area, total_aspect_ratio, total_area_squared;
+    float total_area = 0;
+    float total_aspect_ratio = 0;
+    float total_area_squared = 0;
     for(unsigned int tri = 0; tri < faces.size()/3; tri++) {
         //Calculate area
         auto vertices = get_face_vertices(tri);
@@ -943,8 +945,29 @@ void HalfEdgeMesh::calculate_triangle_area_metrics() {
     triangle_area_standard_deviation = sqrt(variance);
 }
 
-/* Calculates the range (max - min) of triangle areas of the mesh
- * TODO: implement */
-float HalfEdgeMesh::calculate_hausdorff_distance(HalfEdgeMesh& other_mesh) {
+/* Calculates the Hausforff Distance between two HalfEdge Meshes.
+ * if we have two sets A and B then H(A,B) is found by computing
+ * the minimum distance d(a,B) for each point a ∈ A and then taking the maximum
+*  of those values [Botsch, Mario/Kobbelt, Leif/Pauly, Mark. Polygon Mesh Processing]
+ *  In this case, we calculate the Hausdorff Distance wrt the the original point set */
+float HalfEdgeMesh::calculate_hausdorff_distance(std::vector<glm::vec3> const& original_points) {
+    //For each point in the original pointset, calculate distance to closest point in halfedge mesh
+    std::vector<float> minimum_distance(original_points.size(), std::numeric_limits<float>::max());
+    for(unsigned int p = 0; p < original_points.size(); p++) {
+        glm::vec3 const& point = original_points[p];
+        for(auto const& mesh_point : vertex_positions) {
+            float distance = glm::distance(point, mesh_point);
+            if(distance < minimum_distance[p]) {
+                minimum_distance[p] = distance;
+            }
+        }
+    }
+    float max = std::numeric_limits<float>::lowest();
+    for(auto const& distance : minimum_distance) {
+        if(distance > max) {
+            max = distance;
+        }
+    }
 
+    return max;
 }

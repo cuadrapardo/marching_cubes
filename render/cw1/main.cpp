@@ -114,6 +114,7 @@ namespace
 
 int main() try
 {
+#pragma region Render_Setup
     //Create Vulkan window
     auto windowInfo = lut::make_vulkan_window();
     auto window = std::move(windowInfo.first);
@@ -214,6 +215,8 @@ int main() try
         constexpr auto numSets = sizeof(desc) / sizeof(desc[0]);
         vkUpdateDescriptorSets(window.device, numSets, desc, 0, nullptr);
     }
+#pragma endregion
+
 #if TEST_MODE == ON
     //TODO: Show points of test cube bigger
     //TODO: Show each case triangle with a different color.
@@ -258,16 +261,14 @@ int main() try
     BoundingBox pointCloudBBox = get_bounding_box(pointCloud.positions);
     //TODO: set camera centre as centre of point cloud.
 
-    //Incremental_remeshing
-//    HalfEdgeMesh a = obj_to_halfedge(cfg::cubeOBJ);
-
-
+#pragma region "Marching Cubes"
     PointCloud distanceField; //(grid)
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
 
     // Extend the bounding box by one cell size in each direction to avoid edge cases
     pointCloudBBox.add_padding(); //TODO: be able to modify padding
 
+    //Create grid
     distanceField.positions = create_regular_grid(ui_config.grid_resolution, grid_edges, pointCloudBBox);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     std::vector<unsigned int> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
@@ -275,26 +276,53 @@ int main() try
 
     auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, pointCloudBBox, ui_config.grid_resolution);
 
+    //Buffers for rendering
+    std::vector<MeshBuffer> mBuffer;
+    std::vector<PointBuffer> pBuffer;
+    std::vector<LineBuffer> lBuffer;
+
     //Create marching cubes surface
     IndexedMesh reconstructedSurfaceIndexed = query_case_table(vertex_classification, distanceField.positions, distanceField.point_size, ui_config.grid_resolution,
                                                       pointCloudBBox, ui_config.isovalue);
     Mesh reconstructedSurface(reconstructedSurfaceIndexed);
     reconstructedSurface.set_color(glm::vec3{1.0f, 0.0f, 0.0f});
-    reconstructedSurface.set_normals(glm::vec3(1.0f,1.0,0)); //TODO: calculate normals
+    reconstructedSurface.set_normals(glm::vec3(1.0f,1.0,0));
 
     //Create file and convert to HalfEdge data structure
-    write_OBJ(reconstructedSurfaceIndexed, cfg::torusTri);
-    HalfEdgeMesh marchingCubesMesh = obj_to_halfedge(cfg::reconstructedOBJ);
+    write_OBJ(reconstructedSurfaceIndexed, cfg::MC_obj_name);
+    HalfEdgeMesh marchingCubesMesh = obj_to_halfedge(cfg::MC_obj_name);
     ui_config.manifold = marchingCubesMesh.check_manifold();
 
+    //Calculate metrics for MC surface
+    std::cout << "Calculating metrics for reconstructed surface" << std::endl;
+    marchingCubesMesh.calculate_triangle_area_metrics();
+    ui_config.p_cloud_to_MC_mesh = marchingCubesMesh.calculate_hausdorff_distance(pointCloud.positions);
+
+    if(!reconstructedSurface.positions.empty()) { // Do not create an empty buffer - this will produce an error.
+        MeshBuffer mc_surface = create_mesh_buffer(marchingCubesMesh, window, allocator);
+        mBuffer.push_back(std::move(mc_surface));
+    }
+#pragma endregion
+
+#pragma region "Remeshing"
+
     //Remeshing Operations
-    ui_config.target_edge_length = marchingCubesMesh.get_mean_edge_length();
+    HalfEdgeMesh remeshedMesh = marchingCubesMesh;
+    ui_config.target_edge_length = remeshedMesh.get_mean_edge_length(); //TODO: remove this?
+    remeshedMesh.remesh(ui_config.target_edge_length, ui_config.remeshing_iterations);
+    write_OBJ(remeshedMesh, cfg::remeshed_obj_name);
 
-    marchingCubesMesh.remesh(ui_config.target_edge_length, ui_config.remeshing_iterations);
-    write_OBJ(marchingCubesMesh, cfg::torusTri);
+    if(!reconstructedSurface.positions.empty()) { // Do not create an empty buffer - this will produce an error.
+        MeshBuffer remeshed_mesh = create_mesh_buffer(remeshedMesh, window, allocator);
+        mBuffer.push_back(std::move(remeshed_mesh));
+    }
 
+    //Calculate metrics for remeshed surface
+    std::cout << "Calculating metrics for remeshed surface" << std::endl;
+    remeshedMesh.calculate_triangle_area_metrics();
+    ui_config.MC_mesh_to_remeshed = remeshedMesh.calculate_hausdorff_distance(marchingCubesMesh.vertex_positions);
 
-
+#pragma endregion
 
     //Create buffers for rendering
     PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
@@ -303,19 +331,9 @@ int main() try
                                                        window, allocator);
     LineBuffer lineBuffer = create_index_buffer(grid_edges, edge_colors, window, allocator);
 
-    std::vector<PointBuffer> pBuffer;
     pBuffer.push_back(std::move(pointCloudBuffer));
     pBuffer.push_back(std::move(gridBuffer));
-
-    std::vector<LineBuffer> lBuffer;
     lBuffer.push_back(std::move(lineBuffer));
-
-    std::vector<MeshBuffer> mBuffer;
-    if(!reconstructedSurface.positions.empty()) { // Do not create an empty buffer - this will produce an error.
-        MeshBuffer cube_triangles = create_mesh_buffer(marchingCubesMesh, window, allocator);
-        mBuffer.push_back(std::move(cube_triangles));
-    }
-
 
 #endif
 
@@ -341,9 +359,6 @@ int main() try
     ui_config.target_edge_length = edgeTest.get_mean_edge_length();
 
 #endif
-
-
-
     auto previousClock = Clock_::now();
 
     // Application main loop
@@ -526,7 +541,8 @@ int main() try
         ImGui::Checkbox("View 3D grid edges", &ui_config.grid);
         ImGui::Checkbox("View vertex color", &ui_config.vertex_color);
         ImGui::Checkbox("View edge color", &ui_config.edge_color);
-        ImGui::Checkbox("View surface", &ui_config.surface);
+        ImGui::Checkbox("View Marching Cubes surface", &ui_config.mc_surface);
+        ImGui::Checkbox("View Remeshed surface", &ui_config.remeshed_surface);
         ImGui::Text("Reconstructed surface %s manifold", ui_config.manifold ? "is" : "is not");
         ImGui::SliderFloat("Grid Resolution",&ui_config.grid_resolution, ui_config.grid_resolution_min, ui_config.grid_resolution_max);
         ImGui::InputInt("Isovalue", &ui_config.isovalue);
@@ -541,17 +557,32 @@ int main() try
             vkDeviceWaitIdle(window.device);
 
             std::cout << "Grid resolution : " << ui_config.grid_resolution << std::endl;
+            //Recalculate MC surface
             reconstructedSurfaceIndexed = recalculate_grid(pointCloud, distanceField, reconstructedSurface, ui_config, pointCloudBBox,pBuffer, lBuffer, mBuffer,
                              window, allocator);
+            //Recalculate remeshed surface
+            recalculate_remeshed_mesh(ui_config, window, allocator, mBuffer);
+
         }
 
         ImGui::End();
 
         ImGui::Begin("Remeshing Menu");
-
-
         ImGui::InputFloat("Target edge length", &ui_config.target_edge_length);
         ImGui::InputInt("Remeshing iterations", &ui_config.remeshing_iterations);
+        ImGui::End();
+
+        ImGui::Begin("Mesh Metrics");
+        ImGui::Text("Hausdorff distance between point cloud & MC mesh: %f", ui_config.p_cloud_to_MC_mesh );
+        ImGui::Text("Hausdorff distance between MC mesh & final remeshed mesh: %f", ui_config.MC_mesh_to_remeshed );
+//        ImGui::Text("Average triangle area before remesh: %f",  );
+//        ImGui::Text("Average triangle area after remesh: %f" );
+//        ImGui::Text("Triangle area range before remesh: %f" );
+//        ImGui::Text("Triangle area range after remesh: %f" );
+//        ImGui::Text("Average triangle aspect ratio before remesh: %f" );
+//        ImGui::Text("Average triangle aspect ratio after remesh: %f" );
+//        ImGui::Text("Triangle area standard deviation before remesh: %f" );
+//        ImGui::Text("Triangle area standard deviation after remesh: %f" );
 
 
 

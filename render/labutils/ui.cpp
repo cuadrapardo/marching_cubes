@@ -6,6 +6,8 @@
 #include "vkutil.hpp"
 #include "to_string.hpp"
 #include "error.hpp"
+#include "render_constants.hpp"
+#include "../cw1/output_model.hpp"
 #include "../../third_party/glm/include/glm/glm.hpp"
 
 #include "../../marching_cubes/surface_reconstruction.hpp"
@@ -42,7 +44,7 @@ namespace ui {
  * As this is not using a double buffer, the window will */
 //TODO: Create recalculate point cloud. Maybe will be useful to resize point size- this is secondary.
 IndexedMesh recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, Mesh& triangles,
-                      UiConfiguration const& ui_config, BoundingBox& bbox,
+                      UiConfiguration& ui_config, BoundingBox& bbox,
                       std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer, std::vector<MeshBuffer>& mBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
 
@@ -79,6 +81,7 @@ IndexedMesh recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, 
     case_triangles.set_normals(glm::vec3{1, 1.0, 0});
     case_triangles.set_color(glm::vec3{1, 0, 0});
 
+
     if(!case_triangles.positions.empty()) { // Do not create an empty buffer - this will produce an error.
         if(mBuffer.size() > 0) {
             // Destroy buffers. In the case of the test scene, the buffers will not change size for points and lines (since we don't change the resolution)
@@ -93,6 +96,15 @@ IndexedMesh recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, 
     } else {
         mBuffer[0].vertexCount = 0;
     }
+    //Create file and convert to HalfEdge data structure
+    write_OBJ(case_triangles_indexed, cfg::MC_obj_name);
+    HalfEdgeMesh marchingCubesMesh = obj_to_halfedge(cfg::MC_obj_name);
+    ui_config.manifold = marchingCubesMesh.check_manifold();
+
+    //Calculate metrics for MC surface
+    std::cout << "Calculating metrics for reconstructed surface" << std::endl;
+    marchingCubesMesh.calculate_triangle_area_metrics();
+    ui_config.p_cloud_to_MC_mesh = marchingCubesMesh.calculate_hausdorff_distance(pointCloud.positions);
 
     auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, bbox, ui_config.grid_resolution);
 
@@ -108,3 +120,20 @@ IndexedMesh recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, 
 
     return case_triangles_indexed;
 }
+
+void recalculate_remeshed_mesh(UiConfiguration& ui_config, labutils::VulkanContext const& window, labutils::Allocator const& allocator,std::vector<MeshBuffer>& mBuffer) {
+    HalfEdgeMesh remeshed = obj_to_halfedge(cfg::MC_obj_name);
+    remeshed.remesh(ui_config.target_edge_length, ui_config.remeshing_iterations);
+    // Wait for GPU to finish processing
+    vkDeviceWaitIdle(window.device);
+
+    ui_config.manifold = remeshed.check_manifold();
+
+    IndexedMesh remeshed_idx = remeshed;
+    mBuffer[1].vertexCount = 0;
+    MeshBuffer remeshedBuffer = create_mesh_buffer(Mesh(remeshed), window, allocator);
+    mBuffer[1] = std::move(remeshedBuffer);
+}
+
+
+

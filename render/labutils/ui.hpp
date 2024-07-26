@@ -22,7 +22,7 @@ namespace ui {
 
 // Describes values of the different ImGui widgets
 struct UiConfiguration {
-    bool vertices = true, vertex_color = true, distance_field = true, grid = true, edge_color = true, surface = true;
+    bool vertices = true, vertex_color = true, distance_field = true, grid = true, edge_color = true, mc_surface = false, remeshed_surface = true;
     float grid_resolution = 1.0f;
     const float grid_resolution_min = 1.0f, grid_resolution_max = 2.0f;
     int point_cloud_size = 5;
@@ -33,15 +33,19 @@ struct UiConfiguration {
 
     bool manifold = false;
     bool flyCamera = true;
+
+    //Mesh Metrics: Hausdorff distance
+    float p_cloud_to_MC_mesh;
+    float MC_mesh_to_remeshed;
+
 };
 
 // Recalculates grid and scalar values with given UiConfiguration
 IndexedMesh recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, Mesh& triangles,
-                      UiConfiguration const& ui_config, BoundingBox& bbox,
+                      UiConfiguration& ui_config, BoundingBox& bbox,
                       std::vector<PointBuffer>& pBuffer, std::vector<LineBuffer>& lineBuffer, std::vector<MeshBuffer>& mBuffer,
                       labutils::VulkanContext const& window, labutils::Allocator const& allocator);
 
-void recalculate_surface(Mesh& triangles, std::vector<unsigned int> const& grid_values, std::vector<glm::vec3> const& grid_positions,
-                         std::vector<int> const& grid_scalar_values, float const& grid_resolution, BoundingBox const& model_bbox, float const& input_isovalue);
+void recalculate_remeshed_mesh(UiConfiguration& ui_config, labutils::VulkanContext const& window, labutils::Allocator const& allocator,std::vector<MeshBuffer>& mBuffer);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_UI_HPP

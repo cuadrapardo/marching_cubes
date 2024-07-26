@@ -30,22 +30,33 @@ Mesh::Mesh(HalfEdgeMesh const& halfedge_mesh) {
     set_normals(glm::vec3{0,0,1});
 }
 
-Mesh::Mesh(IndexedMesh const& indexed_mesh) {
-    for(unsigned int face_idx = 0; face_idx < indexed_mesh.face_indices.size(); face_idx+=3) {
-        for (unsigned int vertex_offset = 0; vertex_offset < 3; vertex_offset++) {
-            unsigned int vertex_idx = indexed_mesh.face_indices[face_idx + vertex_offset];
-
-            // Retrieve vertex position from vertex_idx_map
-            glm::vec3 vertex_position;
-            auto it = indexed_mesh.vertex_idx_map.find(indexed_mesh.positions[vertex_idx]);
-            if (it != indexed_mesh.vertex_idx_map.end()) {
-                vertex_position = it->first;
-                // Add position to Mesh positions
-                positions.push_back(vertex_position);
-            }
-        }
+Mesh::Mesh(IndexedMesh& idx_mesh) {
+    for(unsigned int face_idx = 0; face_idx < idx_mesh.face_indices.size(); face_idx++) {
+        unsigned int current_vertex_idx = idx_mesh.face_indices[face_idx];
+        positions.push_back(
+                idx_mesh.positions[current_vertex_idx]
+        );
     }
+    set_color(glm::vec3{1,1,1});
+    set_normals(glm::vec3{0,0,1});
 }
+//
+//Mesh::Mesh(HalfEdgeMesh indexed_mesh) {
+//    for(unsigned int face_idx = 0; face_idx < indexed_mesh.face_indices.size(); face_idx+=3) {
+//        for (unsigned int vertex_offset = 0; vertex_offset < 3; vertex_offset++) {
+//            unsigned int vertex_idx = indexed_mesh.face_indices[face_idx + vertex_offset];
+//
+//            // Retrieve vertex position from vertex_idx_map
+//            glm::vec3 vertex_position;
+//            auto it = indexed_mesh.vertex_idx_map.find(indexed_mesh.positions[vertex_idx]);
+//            if (it != indexed_mesh.vertex_idx_map.end()) {
+//                vertex_position = it->first;
+//                // Add position to Mesh positions
+//                positions.push_back(vertex_position);
+//            }
+//        }
+//    }
+//}
 
 IndexedMesh::IndexedMesh(const HalfEdgeMesh& halfEdgeMesh) {
     positions = halfEdgeMesh.vertex_positions;
