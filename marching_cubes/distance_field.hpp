@@ -16,7 +16,7 @@ struct BoundingBox {
     glm::vec3 min;
     glm::vec3 max;
 
-    void add_padding();
+    void add_padding(const float& increment_factor);
 };
 
 
@@ -37,5 +37,9 @@ std::vector<unsigned int> classify_grid_vertices(std::vector<int> const& grid_sc
 //
 std::pair<std::vector<unsigned int>, std::vector<glm::vec3>> classify_grid_edges(std::vector<unsigned int> const& grid_vertex_classification,  BoundingBox const& model_bbox,
                                                                                  float const& grid_resolution);
+
+std::vector<int> apply_point_size_transfer_function(std::vector<int> const&);
+
+//float calculate_isovalue(PointCloud const& distance_field);
 
 #endif //MARCHING_CUBES_POINT_CLOUD_DISTANCE_FIELD_HPP

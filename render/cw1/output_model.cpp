@@ -37,8 +37,8 @@ void write_OBJ(IndexedMesh const& indexedMesh, std::string const& out_filename) 
 
     objFile.close();
     if (objFile.fail()) {
-        std::cerr << "Failed to write to file: " << cfg::reconstructedOBJ << "\n";
+        std::cerr << "Failed to write to file: " << out_filename << "\n";
     } else {
-        std::cout << "Successfully wrote to file: " << cfg::reconstructedOBJ << "\n";
+        std::cout << "Successfully wrote to file: " << out_filename << "\n";
     }
 }

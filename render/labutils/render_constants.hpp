@@ -83,7 +83,7 @@ namespace cfg
     // Models
 #       define MODELDIR_ "assets/cw1/"
     constexpr char const* sponzaObj = MODELDIR_ "sponza_with_ship.obj";
-    constexpr char const* torusTri = MODELDIR_ "cube.tri";
+    constexpr char const* torusTri = MODELDIR_ "fuelinject.tri";
     constexpr char const* cubeOBJ = MODELDIR_ "cube.obj";
     constexpr char const* edgeTestOBJ = MODELDIR_ "edge_test.obj";
 

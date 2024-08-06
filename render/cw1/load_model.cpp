@@ -197,10 +197,14 @@ std::vector<glm::vec3> load_triangle_soup(char const* aPath) {
     return positions;
 }
 
+std::vector<glm::vec3> load_xyz(char const* aPath) {
+    //TODO: implement me
+}
+
 
 std::vector<glm::vec3> load_file(char const* aPath, labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
     std::filesystem::path p(aPath);
-    std::cout << "Selected file: " << p.filename() << std::endl;
+    std::cout << "Selected file: " << p.filename();
     std::vector<glm::vec3> positions;
 
     if(p.extension() == ".obj") {
@@ -213,7 +217,12 @@ std::vector<glm::vec3> load_file(char const* aPath, labutils::VulkanContext cons
         positions = load_triangle_soup(aPath);
     }
 
-    //TODO: add point cloud file support
+    if(p.extension() == ".xyz") {
+        positions = load_xyz(aPath);
+    }
+
+    std::cout << " contains " << positions.size() << " points" << std::endl;
+
 
     return(positions);
 }

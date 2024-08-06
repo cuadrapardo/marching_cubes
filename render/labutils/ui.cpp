@@ -2,6 +2,7 @@
 // Created by Carolina Cuadra Pardo on 6/17/24.
 //
 #include <iostream>
+#include <algorithm>
 #include "ui.hpp"
 #include "vkutil.hpp"
 #include "to_string.hpp"
@@ -78,8 +79,8 @@ IndexedMesh recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, 
             distanceField.point_size, ui_config.grid_resolution, bbox, ui_config.isovalue);
 
     Mesh case_triangles(case_triangles_indexed);
-    case_triangles.set_normals(glm::vec3{1, 1.0, 0});
     case_triangles.set_color(glm::vec3{1, 0, 0});
+    case_triangles.set_normals(glm::vec3{1, 1.0, 0});
 
 
     if(!case_triangles.positions.empty()) { // Do not create an empty buffer - this will produce an error.
@@ -109,7 +110,10 @@ IndexedMesh recalculate_grid(PointCloud& pointCloud, PointCloud& distanceField, 
     auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, bbox, ui_config.grid_resolution);
 
     //Create buffers for rendering
-    PointBuffer gridPointBuffer = create_pointcloud_buffers(distanceField.positions, distanceField.colors, distanceField.point_size,
+    //Map distance field values to something more meaningful using a transfer function.
+    auto adjusted_point_size = apply_point_size_transfer_function(distanceField.point_size);
+
+    PointBuffer gridPointBuffer = create_pointcloud_buffers(distanceField.positions, distanceField.colors, adjusted_point_size,
                                                        window, allocator);
 
     LineBuffer gridLineBuffer = create_index_buffer(grid_edges, edge_colors, window, allocator);

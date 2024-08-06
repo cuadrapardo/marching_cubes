@@ -24,6 +24,7 @@ namespace ui {
 struct UiConfiguration {
     bool vertices = true, vertex_color = true, distance_field = true, grid = true, edge_color = true, mc_surface = false, remeshed_surface = true;
     float grid_resolution = 1.0f;
+    float padding = 0.75f;
     const float grid_resolution_min = 1.0f, grid_resolution_max = 2.0f;
     int point_cloud_size = 5;
     const int p_cloud_size_min = 1, p_cloud_size_max = 10;

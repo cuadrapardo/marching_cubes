@@ -9,6 +9,7 @@
 #include "../render/labutils/error.hpp"
 #include <cstring>
 #include <iostream>
+#include <algorithm>
 
 /* Find min/max extents of the model in 3D space. Returns BoundingBox */
 BoundingBox get_bounding_box(std::vector<glm::vec3> const& point_cloud) {
@@ -222,17 +223,39 @@ std::pair<std::vector<unsigned int>, std::vector<glm::vec3>> classify_grid_edges
 
 /* In order to ensure that the surface created actually encompasses the model, the bounding box needs to be
  * big enough. This increments each axis by 500% of the input bounding box's size on each axis*/
-void BoundingBox::add_padding() {
+void BoundingBox::add_padding(const float& increment_factor) {
 //    float x_extent = max.x - min.x;
 //    float y_extent = max.y - min.y;
 //    float z_extent = max.z - min.z;
 
     glm::vec3 extent = max - min;
 
-    // 500% increment
-    glm::vec3 increment = (5.0f * extent);
+    glm::vec3 increment = (increment_factor * extent);
 
     max = max + increment;
     min = min - increment;
 
 }
+
+/* Returns a vector of the point values of the distance field, normalised and linearly inversely transformed */
+std::vector<int> apply_point_size_transfer_function(std::vector<int> const& distance_field) {
+    std::vector<int> distance_field_transfer;
+    int min_val = *std::min_element(distance_field.begin(), distance_field.end());
+    int max_val = *std::max_element(distance_field.begin(), distance_field.end());
+
+
+    //Normalise & apply transfer function
+    for(auto point : distance_field) {
+        float normalised = (float)(point - min_val) / (float)(max_val - min_val);
+        float inverse_normalised = 1.0f - normalised;
+
+        int p_size = (int)(inverse_normalised * 4) + 1; //Scale from 1 to 5
+        distance_field_transfer.push_back(p_size);
+    }
+
+    return distance_field_transfer;
+}
+
+//float calculate_isovalue(PointCloud const& distance_field) {
+//
+//}

@@ -833,30 +833,16 @@ void HalfEdgeMesh::tangential_relaxation() {
         glm::vec3 const& normal = vertex_normals[vertex_idx];
 
         auto one_ring = get_one_ring_vertices(vertex_idx);
-        if (one_ring.find(4) != one_ring.end()) {
-            assert(!one_ring.empty());
-        } else {
-        }
         glm::vec3 barycentre = glm::vec3{0.0f, 0.0f, 0.0f};
 
         for(const auto vertex : one_ring) {
             barycentre = barycentre + vertex_positions.at(vertex);
         }
-//        assert(!std::isnan(vertex_positions[vertex].x));
-        assert(!std::isnan(barycentre.x));
-         //Issues: Normals can be nan
-         //vertex 4 is a NAN
-
         barycentre = barycentre / (float)one_ring.size();
-
-//        assert(!std::isnan(barycentre.x));
-
         glm::vec3 updated_position = barycentre + glm::dot(normal, (position - barycentre)) * normal;
-        assert(!std::isnan(updated_position.x));
 
         vertex_positions[vertex_idx] = updated_position;
     }
-
 }
 
 

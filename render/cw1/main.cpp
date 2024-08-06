@@ -254,7 +254,7 @@ int main() try
 #endif
 
 #if TEST_MODE == OFF
-//Load file obj, .tri, todo: point cloud format
+//Load file obj, .tri, .xyz
     PointCloud pointCloud;
     pointCloud.positions = load_file(cfg::torusTri, window, allocator);
     pointCloud.set_color(glm::vec3(0, 0.5f, 0.5f));
@@ -268,12 +268,17 @@ int main() try
     std::vector<uint32_t> grid_edges; // An edge is the indices of its two vertices in the grid_positions array
 
     // Extend the bounding box by one cell size in each direction to avoid edge cases
-    pointCloudBBox.add_padding(); //TODO: be able to modify padding
+    pointCloudBBox.add_padding(ui_config.padding);
 
     //Create grid
+    auto start = std::chrono::high_resolution_clock::now();
     distanceField.positions = create_regular_grid(ui_config.grid_resolution, grid_edges, pointCloudBBox);
     distanceField.point_size = calculate_distance_field(distanceField.positions, pointCloud.positions);
     std::vector<unsigned int> vertex_classification = classify_grid_vertices(distanceField.point_size, ui_config.isovalue);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed{end-start};
+    int min = static_cast<int>(elapsed.count() / 60);
+    std::cout << "Time taken to create & classify distance field : " << min << "m " << elapsed.count() - (min*60) << "s " << std::endl;
     distanceField.set_color(vertex_classification);
 
     auto [edge_values, edge_colors] = classify_grid_edges(vertex_classification, pointCloudBBox, ui_config.grid_resolution);
@@ -284,8 +289,13 @@ int main() try
     std::vector<LineBuffer> lBuffer;
 
     //Create marching cubes surface
+    start = std::chrono::high_resolution_clock::now();
     IndexedMesh reconstructedSurfaceIndexed = query_case_table(vertex_classification, distanceField.positions, distanceField.point_size, ui_config.grid_resolution,
                                                       pointCloudBBox, ui_config.isovalue);
+    end = std::chrono::high_resolution_clock::now();
+    elapsed = end-start;
+    min = static_cast<int>(elapsed.count() / 60);
+    std::cout << "Time taken to query MC table & create mesh : " << min << "m " << elapsed.count() - (min*60) << "s " << std::endl;
     Mesh reconstructedSurface(reconstructedSurfaceIndexed);
     reconstructedSurface.set_color(glm::vec3{1.0f, 0.0f, 0.0f});
     reconstructedSurface.set_normals(glm::vec3(1.0f,1.0,0));
@@ -294,6 +304,10 @@ int main() try
     write_OBJ(reconstructedSurfaceIndexed, cfg::MC_obj_name);
     HalfEdgeMesh marchingCubesMesh = obj_to_halfedge(cfg::MC_obj_name);
     ui_config.mc_manifold = marchingCubesMesh.check_manifold();
+    if(!ui_config.mc_manifold) {
+        std::cerr << "Reconstructed Surface is not manifold (the mesh has a boundary) - increment padding " << std::endl;
+        return 0;
+    }
 
     //Calculate metrics for MC surface
     std::cout << "Calculating metrics for reconstructed surface" << std::endl;
@@ -307,18 +321,23 @@ int main() try
 #pragma endregion
 
 #pragma region "Remeshing"
-
     //Remeshing Operations
+    std::cout << "Remeshing Marching Cubes surface" << std::endl;
     HalfEdgeMesh remeshedMesh = marchingCubesMesh;
     ui_config.target_edge_length = remeshedMesh.get_mean_edge_length(); //TODO: remove this?
+    start = std::chrono::high_resolution_clock::now();
     remeshedMesh.remesh(ui_config.target_edge_length, ui_config.remeshing_iterations);
+    end = std::chrono::high_resolution_clock::now();
+    elapsed = end-start;
+    min = static_cast<int>(elapsed.count() / 60);
+    std::cout << "Time taken to remesh : " << min << "m " << elapsed.count() - (min*60) << "s " << std::endl;
+
     write_OBJ(remeshedMesh, cfg::remeshed_obj_name);
 
     if(!reconstructedSurface.positions.empty()) { // Do not create an empty buffer - this will produce an error.
         MeshBuffer remeshed_mesh = create_mesh_buffer(remeshedMesh, window, allocator);
         mBuffer.push_back(std::move(remeshed_mesh));
     }
-
     //Calculate metrics for remeshed surface
     std::cout << "Calculating metrics for remeshed surface" << std::endl;
     remeshedMesh.calculate_triangle_area_metrics();
@@ -331,7 +350,8 @@ int main() try
     //Create buffers for rendering
     PointBuffer pointCloudBuffer = create_pointcloud_buffers(pointCloud.positions, pointCloud.colors, pointCloud.point_size,
                                                              window, allocator);
-    PointBuffer gridBuffer = create_pointcloud_buffers(distanceField.positions, distanceField.colors, distanceField.point_size,
+    auto remapped_distance_field = apply_point_size_transfer_function(distanceField.point_size);
+    PointBuffer gridBuffer = create_pointcloud_buffers(distanceField.positions, distanceField.colors, remapped_distance_field,
                                                        window, allocator);
     LineBuffer lineBuffer = create_index_buffer(grid_edges, edge_colors, window, allocator);
 
@@ -526,25 +546,26 @@ int main() try
 
 #endif
 #if TEST_MODE == OFF
-        ImGui::Begin("Camera Type Menu");
-        if (ImGui::RadioButton("Flying camera", ui_config.flyCamera)) {
-            ui_config.flyCamera = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Model camera", !ui_config.flyCamera)) {
-            ui_config.flyCamera = false;
-            state.camera2world = glm::identity<glm::mat4>(); //Reset camera
-        }
-
-        ImGui::End();
+        //Camera modes not implemented ---------------------------------------------
+//        ImGui::Begin("Camera Type Menu");
+//        if (ImGui::RadioButton("Flying camera", ui_config.flyCamera)) {
+//            ui_config.flyCamera = true;
+//        }
+//        ImGui::SameLine();
+//        if (ImGui::RadioButton("Model camera", !ui_config.flyCamera)) {
+//            ui_config.flyCamera = false;
+//            state.camera2world = glm::identity<glm::mat4>(); //Reset camera
+//        }
+//        ImGui::End();
+        //Camera modes not implemented ---------------------------------------------
 
         ImGui::Begin("Surface Reconstruction Menu");
         ImGui::Checkbox("View point cloud vertices", &ui_config.vertices);
-        ImGui::SliderInt("Point cloud point size",&ui_config.point_cloud_size, ui_config.p_cloud_size_min, ui_config.p_cloud_size_max); //TODO: Implement recalculation
+//        ImGui::SliderInt("Point cloud point size",&ui_config.point_cloud_size, ui_config.p_cloud_size_min, ui_config.p_cloud_size_max); //TODO: Implement recalculation
         ImGui::Checkbox("View distance field", &ui_config.distance_field);
         ImGui::Checkbox("View 3D grid edges", &ui_config.grid);
-        ImGui::Checkbox("View vertex color", &ui_config.vertex_color);
-        ImGui::Checkbox("View edge color", &ui_config.edge_color);
+//        ImGui::Checkbox("View vertex color", &ui_config.vertex_color); NOT IMPLEMENTED
+//        ImGui::Checkbox("View edge color", &ui_config.edge_color); NOT IMPLEMENTED
         ImGui::Checkbox("View Marching Cubes surface", &ui_config.mc_surface);
         ImGui::Checkbox("View Remeshed surface", &ui_config.remeshed_surface);
         ImGui::Text("Reconstructed surface %s manifold", ui_config.mc_manifold ? "is" : "is not");
@@ -577,22 +598,24 @@ int main() try
         ImGui::InputInt("Remeshing iterations", &ui_config.remeshing_iterations);
         ImGui::End();
 
-        ImGui::Begin("Mesh Metrics");
+        ImGui::Begin("Marching Cubes Mesh Metrics");
         ImGui::Text("Hausdorff distance between point cloud & MC mesh: %f", ui_config.p_cloud_to_MC_mesh );
-        ImGui::Text("Hausdorff distance between MC mesh & final remeshed mesh: %f", ui_config.MC_mesh_to_remeshed );
-        ImGui::SeparatorText("Triangle Area");
-        ImGui::Text("Average triangle area before remesh: %f", marchingCubesMesh.average_triangle_area );
-        ImGui::Text("Average triangle area after remesh: %f", remeshedMesh.average_triangle_area );
-        ImGui::Text("Triangle area range before remesh: %f", marchingCubesMesh.triangle_area_range );
-        ImGui::Text("Triangle area range after remesh: %f", remeshedMesh.triangle_area_range );
-        ImGui::Text("Triangle area standard deviation before remesh: %f", marchingCubesMesh.triangle_area_standard_deviation );
-        ImGui::Text("Triangle area standard deviation after remesh: %f", remeshedMesh.triangle_area_standard_deviation );
-        ImGui::SeparatorText("Triangle Aspect Ratio");
-        ImGui::Text("Average triangle aspect ratio before remesh: %f", marchingCubesMesh.mean_triangle_aspect_ratio );
-        ImGui::Text("Average triangle aspect ratio after remesh: %f", remeshedMesh.mean_triangle_aspect_ratio );
+        ImGui::Text("Triangle count: %d", (int)marchingCubesMesh.faces.size()/3);
+        ImGui::Text("Vertex count: %d", (int)marchingCubesMesh.vertex_positions.size());
+        ImGui::Text("Average triangle area: %f", marchingCubesMesh.average_triangle_area );
+        ImGui::Text("Triangle area range: %f", marchingCubesMesh.triangle_area_range );
+        ImGui::Text("Triangle area standard deviation: %f", marchingCubesMesh.triangle_area_standard_deviation );
+        ImGui::Text("Average triangle aspect ratio: %f", marchingCubesMesh.mean_triangle_aspect_ratio );
+        ImGui::End();
 
-
-
+        ImGui::Begin("Remeshed Mesh Metrics");
+        ImGui::Text("Hausdorff distance between MC mesh & Remeshed mesh: %f", ui_config.MC_mesh_to_remeshed );
+        ImGui::Text("Triangle count: %d", (int)remeshedMesh.faces.size()/3 );
+        ImGui::Text("Vertex count: %d", (int)remeshedMesh.vertex_positions.size());
+        ImGui::Text("Average triangle area: %f", remeshedMesh.average_triangle_area );
+        ImGui::Text("Triangle area range: %f", remeshedMesh.triangle_area_range );
+        ImGui::Text("Triangle area: %f", remeshedMesh.triangle_area_standard_deviation );
+        ImGui::Text("Average triangle aspect ratio: %f", remeshedMesh.mean_triangle_aspect_ratio );
         ImGui::End();
 
 #endif
