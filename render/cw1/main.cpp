@@ -256,7 +256,7 @@ int main() try
 #if TEST_MODE == OFF
 //Load file obj, .tri, .xyz
     PointCloud pointCloud;
-    pointCloud.positions = load_file(cfg::torusTri, window, allocator);
+    pointCloud.positions = load_file(cfg::torusTri, cfg::defaultConfig, ui_config);
     pointCloud.set_color(glm::vec3(0, 0.5f, 0.5f));
     pointCloud.set_size(ui_config.point_cloud_size);
 

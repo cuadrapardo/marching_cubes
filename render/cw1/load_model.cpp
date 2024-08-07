@@ -12,6 +12,7 @@
 #include "../labutils/to_string.hpp"
 #include "../labutils/vkobject.hpp"
 #include "../labutils/vkutil.hpp"
+#include "../labutils/ui.hpp"
 
 namespace lut = labutils;
 
@@ -168,7 +169,6 @@ std::vector<glm::vec3> load_triangle_soup(char const* aPath) {
     std::vector<glm::vec3> positions;
     int j = 0; // counter for every 3 coordinates
 
-    //testing
     std::ifstream fin(aPath);
     std::string fileContent; //placeholder string for content of file
 
@@ -197,12 +197,60 @@ std::vector<glm::vec3> load_triangle_soup(char const* aPath) {
     return positions;
 }
 
+/* Loads .xyz file with x y z positions on one line */
 std::vector<glm::vec3> load_xyz(char const* aPath) {
-    //TODO: implement me
+    assert(aPath);
+    std::vector<glm::vec3> positions;
+
+    std::ifstream fin(aPath);
+
+    std::string line;
+    while (std::getline(fin, line)) {
+        std::istringstream iss(line);
+        double x, y, z;
+
+        if (!(iss >> x >> y >> z)) {
+            std::cerr << "Error parsing line: " << line << std::endl;
+            continue;
+        }
+
+        positions.emplace_back(x,y,z);
+    }
+    fin.close();
+    return positions;
+}
+
+void read_config(const std::string& filename, UiConfiguration& config) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Could not open .config file" << std::endl;
+        return;
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.empty() || line[0] == '#') continue;
+
+        std::istringstream iss(line);
+        std::string key;
+        if (iss >> key) {
+            if (key == "grid_resolution_min") iss >> const_cast<float&>(config.grid_resolution_min);
+            else if (key == "grid_resolution_max") iss >> const_cast<float&>(config.grid_resolution_max);
+            else if (key == "grid_resolution") iss >> config.grid_resolution;
+            else if (key == "padding") iss >> config.padding;
+            else if (key == "point_cloud_size") iss >> config.point_cloud_size;
+            else if (key == "isovalue") iss >> config.isovalue;
+            else if (key == "target_edge_length") iss >> config.target_edge_length;
+            else if (key == "remeshing_iterations") iss >> config.remeshing_iterations;
+        }
+    }
+
+    file.close();
 }
 
 
-std::vector<glm::vec3> load_file(char const* aPath, labutils::VulkanContext const& window, labutils::Allocator const& allocator) {
+
+std::vector<glm::vec3> load_file(char const* aPath, char const* aConfigPath, UiConfiguration& ui_config) {
     std::filesystem::path p(aPath);
     std::cout << "Selected file: " << p.filename();
     std::vector<glm::vec3> positions;
@@ -223,6 +271,7 @@ std::vector<glm::vec3> load_file(char const* aPath, labutils::VulkanContext cons
 
     std::cout << " contains " << positions.size() << " points" << std::endl;
 
+    read_config(aConfigPath, ui_config);
 
     return(positions);
 }

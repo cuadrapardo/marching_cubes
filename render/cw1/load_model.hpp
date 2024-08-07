@@ -7,11 +7,12 @@
 #include "../labutils/allocator.hpp"
 #include "../labutils/vulkan_context.hpp"
 #include "point_cloud.hpp"
+#include "../labutils/ui.hpp"
 
 constexpr char const* WHITE_MAT = "assets/cw1/textures/white.jpg";
 
-//Loads file (.obj, .tri, .xyz) and returns a vector of the vertex positions
-std::vector<glm::vec3> load_file(char const* aPath, labutils::VulkanContext const& window, labutils::Allocator const& allocator);
+//Loads file (.obj, .tri, .xyz) with config file and returns a vector of the vertex positions
+std::vector<glm::vec3> load_file(char const* aPath, char const* aConfigPath, UiConfiguration& ui_config);
 
 // Load a Wavefront OBJ model
 SimpleModel load_simple_wavefront_obj( char const* aPath );
@@ -19,6 +20,10 @@ SimpleModel load_simple_wavefront_obj( char const* aPath );
 std::vector<glm::vec3> load_triangle_soup(char const* aPath);
 
 std::vector<glm::vec3> load_xyz(char const* aPath);
+
+void read_config(const std::string& filename, UiConfiguration& config);
+
+
 
 
 

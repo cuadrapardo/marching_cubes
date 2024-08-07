@@ -20,7 +20,7 @@ namespace ui {
     ImGui_ImplVulkan_InitInfo setup_imgui(labutils::VulkanWindow const&, labutils::DescriptorPool const&);
 }
 
-// Describes values of the different ImGui widgets
+// Describes values of the different widgets
 struct UiConfiguration {
     bool vertices = true, vertex_color = true, distance_field = true, grid = true, edge_color = true, mc_surface = false, remeshed_surface = true;
     float grid_resolution = 1.0f;
