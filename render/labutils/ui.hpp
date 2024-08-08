@@ -36,8 +36,8 @@ struct UiConfiguration {
     bool flyCamera = true;
 
     //Mesh Metrics: Hausdorff distance
-    float p_cloud_to_MC_mesh;
-    float MC_mesh_to_remeshed;
+    float p_cloud_to_MC_mesh = 0.0f;
+    float MC_mesh_to_remeshed = 0.0f;
 
 };
 
