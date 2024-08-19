@@ -47,7 +47,7 @@ std::pair<std::vector<unsigned int>, std::vector<glm::vec3>> classify_cube_edges
         std::vector<unsigned int> const& vertex_values) {
     std::vector<glm::vec3> color;
     std::vector<unsigned int> edge_value;
-    for(unsigned int edge = 0; edge < edge_indices.size(); edge++) {
+    for(unsigned int edge = 0; edge < edge_indices.size() - 1; edge++) {
         unsigned int v_0 = edge_indices[edge];
         unsigned int v_1 = edge_indices[edge+1];
         if(vertex_values[v_0] == 0 && vertex_values[v_1] == 0) {

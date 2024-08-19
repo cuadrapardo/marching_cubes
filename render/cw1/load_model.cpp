@@ -92,6 +92,7 @@ SimpleModel load_simple_wavefront_obj( char const* aPath )
             activeMaterials.emplace( matId );
         }
 
+
         // Process vertices for active material
         // This does multiple passes over the vertex data, which is less than
         // optimal...

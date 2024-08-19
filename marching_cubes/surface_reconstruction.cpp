@@ -35,7 +35,7 @@ glm::vec3 linear_interpolation(glm::vec3 const& point_1, glm::vec3 const& point_
 
     float alpha = (isovalue - (float)scalar_1) / ((float)scalar_2 - scalar_1);
 
-    alpha = glm::clamp(alpha, 0.0f, 1.0f); // ??? Double check with hamish that this is appropriate.
+    alpha = glm::clamp(alpha, 0.0f, 1.0f);
 
     interpolated_position.x = (1-alpha)*point_1.x + (alpha*point_2.x);
     interpolated_position.y = (1-alpha)*point_1.y + (alpha*point_2.y);

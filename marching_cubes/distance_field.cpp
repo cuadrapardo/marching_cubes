@@ -48,13 +48,24 @@ std::vector<glm::vec3> create_regular_grid(float const& grid_resolution, std::ve
             extents.y / scale,
             extents.z / scale,
     };
+    std::cout << "Grid dimensions: " << grid_boxes.x << " x " << grid_boxes.y << " x " << grid_boxes.z << std::endl;
+
+    auto point_grid_approx = (extents.x+1) * (extents.y+1) * (extents.z+1);
+    if(point_grid_approx > 1000000) {
+        std::cerr << "Grid is too big - please use a file with smaller dimensions. Grid approx. size (points): "<< point_grid_approx << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
 
     auto get_index = [grid_boxes](unsigned int i, unsigned int j, unsigned int k) -> unsigned int {
         return i * (grid_boxes.y + 2) * (grid_boxes.z + 2) + j * (grid_boxes.z + 2) + k;
     }; // note this will only work in a loop structured like the one below
 
+
     for (unsigned int i = 0; i <= grid_boxes.x + 1 ; i++) {
+//        std::cout << "i: " << i << std::endl;
         for(unsigned int j = 0; j <= grid_boxes.y + 1; j++) {
+//            std::cout << "j: " << j << std::endl;
             for(unsigned int k = 0; k <= grid_boxes.z + 1; k++) {
                 // Add point
                 grid_positions.emplace_back(

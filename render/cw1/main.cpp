@@ -71,7 +71,7 @@ namespace lut = labutils;
      * The user modifies the test_cube_vertex_classification, where 0 is negative and 1 is positive.
      * For linear interpolation, these vertices must also have a scalar value. Since the isovalue is 1.5 (1.0f + shifted
      * by 0.5), using 1 for negative, and 2 for positive, is a simple solution. (see render_constants.hpp)
-     * --> The implementation has been tested for all 15 original base cases & produce triangles correctly. */
+     * --> The implementation has been tested for all 22 correct base cases & produces triangles correctly. */
     std::vector<unsigned int> test_cube_vertex_classification = {
             0,
             0,
