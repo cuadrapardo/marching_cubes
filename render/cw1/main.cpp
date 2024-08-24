@@ -112,9 +112,21 @@ namespace
 
 
 
-int main() try
+int main(int argc, char* argv[]) try
 {
 #pragma region Render_Setup
+    // Check if the correct number of arguments is provided
+#if TEST_MODE == OFF
+    if (argc != 2) {
+        throw std::runtime_error("Usage: program <filename>");
+    }
+
+    std::string filename = argv[1];
+
+    // Construct the full path to the file in the "assets" folder
+    std::string file_path = "assets/" + filename;
+#endif
+
     //Create Vulkan window
     auto windowInfo = lut::make_vulkan_window();
     auto window = std::move(windowInfo.first);
@@ -256,7 +268,7 @@ int main() try
 #if TEST_MODE == OFF
 //Load file obj, .tri, .xyz
     PointCloud pointCloud;
-    pointCloud.positions = load_file(cfg::torusTri, cfg::defaultConfig, ui_config);
+    pointCloud.positions = load_file(file_path, cfg::defaultConfig, ui_config);
     pointCloud.set_color(glm::vec3(0, 0.5f, 0.5f));
     pointCloud.set_size(ui_config.point_cloud_size);
 
@@ -306,7 +318,7 @@ int main() try
     ui_config.mc_manifold = marchingCubesMesh.check_manifold();
     if(!ui_config.mc_manifold) {
         std::cerr << "Reconstructed Surface is not manifold (the mesh has a boundary) - increment padding " << std::endl;
-        return 0;
+        return(0);
     }
 
     //Calculate metrics for MC surface
@@ -343,6 +355,8 @@ int main() try
     remeshedMesh.calculate_triangle_area_metrics();
     ui_config.MC_mesh_to_remeshed = remeshedMesh.calculate_hausdorff_distance(marchingCubesMesh.vertex_positions);
     ui_config.remesh_manifold = remeshedMesh.check_manifold();
+
+//    return(0);
 
 
 #pragma endregion
@@ -539,9 +553,6 @@ int main() try
 
         }
 
-        if (ImGui::Button("Output to file")) {
-            write_OBJ(edgeTest, cfg::torusTri);
-        }
 
 
 #endif
@@ -576,7 +587,7 @@ int main() try
             ui_config.mc_manifold = marchingCubesMesh.check_manifold();
         }
         if (ImGui::Button("Output to file")) {
-            write_OBJ(reconstructedSurfaceIndexed, cfg::torusTri);
+            write_OBJ(reconstructedSurfaceIndexed, file_path);
         }
         if (ImGui::Button("Recalculate")) {
             // Wait for GPU to finish processing

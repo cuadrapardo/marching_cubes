@@ -17,7 +17,7 @@
 namespace lut = labutils;
 
 
-SimpleModel load_simple_wavefront_obj( char const* aPath )
+SimpleModel load_simple_wavefront_obj( char const*  aPath )
 {
     assert( aPath );
 
@@ -164,13 +164,17 @@ SimpleModel load_simple_wavefront_obj( char const* aPath )
     return ret;
 }
 
-std::vector<glm::vec3> load_triangle_soup(char const* aPath) {
-    assert( aPath );
+std::vector<glm::vec3> load_triangle_soup(std::string aPath) {
+//    assert( aPath );
 
     std::vector<glm::vec3> positions;
     int j = 0; // counter for every 3 coordinates
 
     std::ifstream fin(aPath);
+    if (!fin.is_open()) {
+        std::cerr << "Could not open file" << std::endl;
+        exit(1);
+    }
     std::string fileContent; //placeholder string for content of file
 
     getline(fin, fileContent); //first line is n of faces
@@ -199,11 +203,16 @@ std::vector<glm::vec3> load_triangle_soup(char const* aPath) {
 }
 
 /* Loads .xyz file with x y z positions on one line */
-std::vector<glm::vec3> load_xyz(char const* aPath) {
-    assert(aPath);
+std::vector<glm::vec3> load_xyz(std::string aPath) {
+//    assert(aPath);
     std::vector<glm::vec3> positions;
 
     std::ifstream fin(aPath);
+
+    if (!fin.is_open()) {
+        std::cerr << "Could not open file" << std::endl;
+        exit(1);
+    }
 
     std::string line;
     while (std::getline(fin, line)) {
@@ -225,7 +234,7 @@ void read_config(const std::string& filename, UiConfiguration& config) {
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Could not open .config file" << std::endl;
-        return;
+        exit(1);
     }
 
     std::string line;
@@ -249,17 +258,45 @@ void read_config(const std::string& filename, UiConfiguration& config) {
     file.close();
 }
 
+// Function to read ONLY vertex data from an OBJ file. It will ingore everything else
+std::vector<glm::vec3> load_obj_vertices(std::string aPath) {
+        std::vector<glm::vec3> vertices;
+        std::ifstream file(aPath);
+
+        if (!file.is_open()) {
+            std::cerr << "Could not open file" << std::endl;
+            exit(1);
+        }
+
+        std::string line;
+        while (std::getline(file, line)) {
+            std::istringstream iss(line);
+            std::string prefix;
+            iss >> prefix;
+
+            if (prefix == "v") {
+                float x, y, z;
+                if (iss >> x >> y >> z) {
+                    vertices.emplace_back(x, y, z);
+                } else {
+                    std::cerr << "Warning: Invalid vertex line format: " << line << std::endl;
+                }
+            }
+        }
+
+        file.close();
+        return vertices;
+    }
 
 
-std::vector<glm::vec3> load_file(char const* aPath, char const* aConfigPath, UiConfiguration& ui_config) {
+
+std::vector<glm::vec3> load_file(std::string aPath, char const* aConfigPath, UiConfiguration& ui_config) {
     std::filesystem::path p(aPath);
     std::cout << "Selected file: " << p.filename();
     std::vector<glm::vec3> positions;
 
     if(p.extension() == ".obj") {
-        SimpleModel obj_file = load_simple_wavefront_obj(aPath);
-        positions.insert(positions.end(), obj_file.dataTextured.positions.begin(),  obj_file.dataTextured.positions.end());
-        positions.insert(positions.end(), obj_file.dataUntextured.positions.begin(),  obj_file.dataUntextured.positions.end());
+        positions = load_obj_vertices(aPath);
     }
 
     if(p.extension() == ".tri") {

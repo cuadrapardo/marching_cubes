@@ -10,7 +10,7 @@
 #define EDGE 2
 
 #ifndef TEST_MODE
-    #define TEST_MODE OFF// default value if TEST_MODE is not provided
+    #define TEST_MODE EDGE // default value if TEST_MODE is not provided
 #endif
 
 
@@ -85,7 +85,7 @@ namespace cfg
     // Models
 #       define MODELDIR_ "assets/cw1/"
     constexpr char const* sponzaObj = MODELDIR_ "sponza_with_ship.obj";
-    constexpr char const* torusTri = MODELDIR_ "cow.tri";
+//    constexpr char const* torusTri = MODELDIR_ "bunny_stanford.xyz";
     constexpr char const* cubeOBJ = MODELDIR_ "cube.obj";
     constexpr char const* edgeTestOBJ = MODELDIR_ "edge_test.obj";
 

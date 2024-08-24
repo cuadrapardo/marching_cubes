@@ -12,14 +12,16 @@
 constexpr char const* WHITE_MAT = "assets/cw1/textures/white.jpg";
 
 //Loads file (.obj, .tri, .xyz) with config file and returns a vector of the vertex positions
-std::vector<glm::vec3> load_file(char const* aPath, char const* aConfigPath, UiConfiguration& ui_config);
+std::vector<glm::vec3> load_file(std::string aPath, char const* aConfigPath, UiConfiguration& ui_config);
 
 // Load a Wavefront OBJ model
-SimpleModel load_simple_wavefront_obj( char const* aPath );
+SimpleModel load_simple_wavefront_obj( char const* aPath  );
 
-std::vector<glm::vec3> load_triangle_soup(char const* aPath);
+std::vector<glm::vec3> load_triangle_soup(std::string aPath);
 
-std::vector<glm::vec3> load_xyz(char const* aPath);
+std::vector<glm::vec3> load_xyz(std::string aPath);
+
+std::vector<glm::vec3> load_obj_vertices(std::string aPath);
 
 void read_config(const std::string& filename, UiConfiguration& config);
 
